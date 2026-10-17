@@ -1,0 +1,173 @@
+refresh:
+  name: Aktualizovat
+  description: Načte znovu všechny povolené moduly.
+  fields:
+    entry_id: &id001
+      name: Účet Bakalářů
+      required: true
+      selector:
+        config_entry:
+          integration: bakalari
+query:
+  name: Načíst data API
+  description: Vrací neupravená data dokumentovaného endpointu do response_variable.
+  fields:
+    entry_id: *id001
+    endpoint:
+      name: Endpoint
+      required: true
+      selector:
+        select:
+          options:
+          - api_versions
+          - api_info
+          - user
+          - marks
+          - new_marks
+          - final_marks
+          - measures
+          - homeworks
+          - homework_count
+          - absence
+          - received
+          - sent
+          - noticeboard
+          - unread
+          - noticeboard_unread
+          - message_types
+          - received_detail
+          - sent_detail
+          - timetable
+          - permanent_timetable
+          - events
+          - my_events
+          - public_events
+          - substitutions
+          - subjects
+          - themes
+          - payments
+          - balance
+          - payment_info
+          - student_present
+          - commissioners
+          - new_consents
+          - web_modules
+          - classbook
+          - lesson_tags
+          - lesson_absence
+          - lesson_past
+          - lesson_timetable
+    id:
+      name: Identifikátor
+      required: false
+      selector: &id002
+        text: {}
+    parameters:
+      name: Parametry dotazu
+      required: false
+      selector: &id003
+        object: {}
+      description: 'Například {from: ''2026-10-01'', to: ''2026-10-31''}. ID zadávejte
+        bez URL kódování.'
+mark_message_read:
+  name: Označit zprávu jako přečtenou
+  description: Změní stav zprávy v Bakalářích.
+  fields:
+    entry_id: *id001
+    message_id:
+      name: ID zprávy
+      required: true
+      selector: *id002
+set_homework_done:
+  name: Dokončení úkolu
+  description: Nastaví žákovský příznak Finished.
+  fields:
+    entry_id: *id001
+    homework_id:
+      name: ID úkolu
+      required: true
+      selector: *id002
+    done:
+      name: Hotovo
+      required: true
+      selector:
+        boolean: {}
+confirm_marks:
+  name: Podepsat známky
+  description: Odešle podpis vybraných známek.
+  fields:
+    entry_id: *id001
+    mark_ids:
+      name: ID známek (seznam)
+      required: true
+      selector: *id003
+predict_marks:
+  name: Předvídat průměr
+  description: Vrací předpověď školy; seznam obsahuje existující i hypotetické známky.
+  fields:
+    entry_id: *id001
+    marks:
+      name: Známky (seznam objektů)
+      required: true
+      selector: *id003
+send_message:
+  name: Odeslat Komens
+  description: Odešle zprávu zvoleným příjemcům. Typy a příjemce zjistíte dotazem
+    message_types.
+  fields:
+    entry_id: *id001
+    message_type:
+      name: Typ zprávy
+      required: true
+      selector: *id002
+    title:
+      name: Nadpis
+      required: true
+      selector: *id002
+    text:
+      name: Text
+      required: true
+      selector:
+        text:
+          multiline: true
+    recipient_type:
+      name: Typ příjemce
+      required: true
+      selector: *id002
+    recipients:
+      name: ID příjemců (seznam)
+      required: true
+      selector: *id003
+    options:
+      name: Další pole zprávy
+      required: false
+      selector: *id003
+write_classbook:
+  name: Zapsat třídní knihu
+  description: 'Pro učitele: zapíše záznam podle oprávnění účtu. record.Id musí odpovídat
+    record_id.'
+  fields:
+    entry_id: *id001
+    record_id:
+      name: ID záznamu
+      required: true
+      selector: *id002
+    record:
+      name: Záznam
+      required: true
+      selector: *id003
+get_attachment:
+  name: Načíst přílohu
+  description: Vrací Base64 a MIME typ přílohy (nejvýše 5 MiB).
+  fields:
+    entry_id: *id001
+    attachment_id:
+      name: ID přílohy
+      required: true
+      selector: *id002
+web_login:
+  name: Přihlášení na web
+  description: Vrací jednorázovou přihlašovací URL. Uchovávejte ji jako přihlašovací
+    údaj.
+  fields:
+    entry_id: *id001

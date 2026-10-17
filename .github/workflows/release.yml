@@ -1,0 +1,50 @@
+name: Vydání verze
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vydani-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  kontrola:
+    name: Ověřit před vydáním
+    uses: ./.github/workflows/test.yml
+
+  vydani:
+    name: Zveřejnit instalační balíček
+    needs: kontrola
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Načíst vydávaný kód
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Připravit Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.14'
+      - name: Sestavit balíček a české poznámky
+        run: |
+          python scripts/build_release.py
+          python scripts/release_notes.py "$GITHUB_REF_NAME"
+      - name: Připojit kontrolní součet
+        working-directory: dist
+        run: sha256sum bakalari-*.zip > SHA256SUMS.txt
+      - name: Vytvořit vydání na GitHubu
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/bakalari-*.zip dist/SHA256SUMS.txt \
+            --verify-tag \
+            --title "Bakaláři $GITHUB_REF_NAME" \
+            --notes-file dist/poznamky-k-vydani.md

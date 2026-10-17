@@ -1,0 +1,22 @@
+name: Návrh vylepšení
+description: Navrhněte novou funkci nebo zlepšení používání integrace.
+title: "[Návrh]: "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Jakou potřebu chcete vyřešit
+      description: Popište konkrétní situaci v Home Assistantu.
+    validations:
+      required: true
+  - type: textarea
+    id: reseni
+    attributes:
+      label: Navrhované chování
+    validations:
+      required: true
+  - type: textarea
+    id: api
+    attributes:
+      label: Dokumentace API a případné alternativy
+      description: Přiložte veřejný odkaz nebo anonymizovanou strukturu dat. Nepřikládejte skutečné školní záznamy.

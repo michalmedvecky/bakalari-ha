@@ -1,0 +1,58 @@
+{
+  "title": "Bakaláři",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Připojení Bakalářů",
+        "description": "Zadejte adresu webu Bakalářů vaší školy a přihlašovací údaje. Pro další účet přidejte další integraci.",
+        "data": {
+          "url": "Adresa školy",
+          "username": "Uživatelské jméno",
+          "password": "Heslo"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Připojení Bakalářů",
+        "description": "Zadejte adresu webu Bakalářů vaší školy a přihlašovací údaje. Pro další účet přidejte další integraci.",
+        "data": {
+          "url": "Adresa školy",
+          "username": "Uživatelské jméno",
+          "password": "Heslo"
+        }
+      },
+      "reconfigure": {
+        "title": "Připojení Bakalářů",
+        "description": "Zadejte adresu webu Bakalářů vaší školy a přihlašovací údaje. Pro další účet přidejte další integraci.",
+        "data": {
+          "url": "Adresa školy",
+          "username": "Uživatelské jméno",
+          "password": "Heslo"
+        }
+      }
+    },
+    "error": {
+      "invalid_url": "Zadejte platnou adresu HTTP(S) bez parametrů.",
+      "invalid_auth": "Nesprávné jméno nebo heslo.",
+      "cannot_connect": "Školní server je nedostupný nebo vrátil neplatná data."
+    },
+    "abort": {
+      "already_configured": "Tento účet už je nastavený.",
+      "wrong_account": "Údaje patří jinému účtu nebo serveru. Přidejte ho jako novou integraci.",
+      "reauth_successful": "Přihlašovací údaje byly aktualizovány.",
+      "reconfigure_successful": "Nastavení bylo aktualizováno."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Nastavení aktualizací",
+        "data": {
+          "scan_interval": "Interval aktualizace (sekundy)",
+          "modules": "Načítané moduly",
+          "expose_details": "Zveřejnit podrobnosti v atributech entit"
+        },
+        "description": "Podrobnosti mohou obsahovat osobní údaje a ukládat se do historie. Změny se použijí po uložení."
+      }
+    }
+  }
+}

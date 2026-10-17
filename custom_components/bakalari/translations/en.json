@@ -1,0 +1,58 @@
+{
+  "title": "Bakaláři",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect Bakaláři",
+        "description": "Enter your school's Bakaláři URL and credentials. Add a separate integration entry for another account.",
+        "data": {
+          "url": "School URL",
+          "username": "Username",
+          "password": "Password"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Connect Bakaláři",
+        "description": "Enter your school's Bakaláři URL and credentials. Add a separate integration entry for another account.",
+        "data": {
+          "url": "School URL",
+          "username": "Username",
+          "password": "Password"
+        }
+      },
+      "reconfigure": {
+        "title": "Connect Bakaláři",
+        "description": "Enter your school's Bakaláři URL and credentials. Add a separate integration entry for another account.",
+        "data": {
+          "url": "School URL",
+          "username": "Username",
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "invalid_url": "Enter a valid HTTP(S) school URL without query parameters.",
+      "invalid_auth": "Invalid username or password.",
+      "cannot_connect": "Cannot connect or the server returned invalid data."
+    },
+    "abort": {
+      "already_configured": "This account is already configured.",
+      "wrong_account": "These credentials belong to another account or server. Add a separate integration.",
+      "reauth_successful": "Credentials updated.",
+      "reconfigure_successful": "Configuration updated."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Polling options",
+        "data": {
+          "scan_interval": "Update interval (seconds)",
+          "modules": "Polled modules",
+          "expose_details": "Expose detailed entity attributes"
+        },
+        "description": "Details may contain personal information and be stored in history. Changes apply after saving."
+      }
+    }
+  }
+}

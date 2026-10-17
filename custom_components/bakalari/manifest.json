@@ -1,0 +1,14 @@
+{
+  "domain": "bakalari",
+  "name": "Bakaláři",
+  "version": "1.0.0",
+  "codeowners": [
+    "@michalmedvecky"
+  ],
+  "config_flow": true,
+  "documentation": "https://github.com/michalmedvecky/bakalari-ha",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "requirements": [],
+  "issue_tracker": "https://github.com/michalmedvecky/bakalari-ha/issues"
+}

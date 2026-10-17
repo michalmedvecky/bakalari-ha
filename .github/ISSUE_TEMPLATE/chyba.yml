@@ -1,0 +1,61 @@
+name: Hlášení chyby
+description: Nahlaste problém s instalací, entitami nebo komunikací s API.
+title: "[Chyba]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Děkujeme za hlášení. Nepřikládejte hesla, tokeny, URL konkrétní školy ani osobní údaje žáků a učitelů. Bezpečnostní chyby řešte podle SECURITY.md.
+  - type: input
+    id: verze-integrace
+    attributes:
+      label: Verze integrace
+      placeholder: Například 1.0.0
+    validations:
+      required: true
+  - type: input
+    id: verze-ha
+    attributes:
+      label: Verze Home Assistantu
+      placeholder: Například 2026.3.4
+    validations:
+      required: true
+  - type: dropdown
+    id: typ-uctu
+    attributes:
+      label: Typ účtu
+      options:
+        - Žák
+        - Rodič
+        - Učitel
+        - Jiný / nevím
+    validations:
+      required: true
+  - type: textarea
+    id: postup
+    attributes:
+      label: Jak problém zopakovat
+      description: Uveďte jednotlivé kroky a dotčenou funkci nebo entitu.
+    validations:
+      required: true
+  - type: textarea
+    id: ocekavani
+    attributes:
+      label: Očekávané a skutečné chování
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostika
+    attributes:
+      label: Anonymizovaná diagnostika nebo výpis chyby
+      description: Před odesláním zkontrolujte obsah. Nezveřejňujte syrové odpovědi školního API.
+      render: text
+  - type: checkboxes
+    id: kontrola
+    attributes:
+      label: Kontrola před odesláním
+      options:
+        - label: Prošel/prošla jsem návod a existující hlášení.
+          required: true
+        - label: Hlášení neobsahuje přihlašovací údaje ani osobní údaje.
+          required: true

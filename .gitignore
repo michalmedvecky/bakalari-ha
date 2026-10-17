@@ -1,0 +1,22 @@
+.venv/
+.ha-venv/
+.ha-test/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.pyc
+.coverage
+htmlcov/
+dist/
+
+# Místní nastavení, přihlašovací údaje a výstupy editorů.
+.DS_Store
+.env
+.env.*
+!.env.example
+secrets.yaml
+configuration.yaml
+home-assistant.log*
+.storage/
+.vscode/
+.idea/

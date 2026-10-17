@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Instalace a řešení potíží
+    url: https://github.com/michalmedvecky/bakalari-ha/blob/main/README.md
+    about: Nejprve projděte návod, požadavky a známá omezení.
+  - name: Soukromé hlášení bezpečnostní chyby
+    url: https://github.com/michalmedvecky/bakalari-ha/blob/main/SECURITY.md
+    about: Postup pro problémy, které mohou ohrozit účty nebo školní data.

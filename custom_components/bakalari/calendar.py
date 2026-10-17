@@ -16,11 +16,11 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
     @callback
     def discover():
-        for key, name in (("timetable", "Rozvrh"), ("events", "Školní akce")):
+        for key in ("timetable", "events"):
             if key in entry.runtime_data.data and key not in added:
                 added.add(key)
                 async_add_entities(
-                    [BakalariCalendar(entry.runtime_data, key, name, "mdi:calendar")]
+                    [BakalariCalendar(entry.runtime_data, key, key, "mdi:calendar")]
                 )
 
     discover()

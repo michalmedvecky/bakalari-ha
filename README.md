@@ -11,7 +11,7 @@ Vlastní asynchronní integrace školního systému Bakaláři API v3. Konfigura
 
 Implementace vychází z [bakalari-api/bakalari-api-v3](https://github.com/bakalari-api/bakalari-api-v3), revize `d4b12ddda3cd7c65c6c1b14723b432a1a2da906f`. Jde o komunitně zdokumentované API, dostupnost se liší podle verze serveru, licence školy a práv uživatele. Projekt není produktem společnosti Bakaláři.
 
-**Požadavky:** Home Assistant 2026.3 nebo novější, webová adresa Bakalářů školy a funkční přihlašovací údaje. Testovací prostředí používá Home Assistant 2026.3.4 a Python 3.14. Integrace nevyžaduje externí Python knihovnu.
+**Požadavky:** Home Assistant 2026.3 nebo novější, webová adresa Bakalářů školy a funkční přihlašovací údaje. Automatické testy pokrývají Home Assistant 2026.3.4 a 2026.10.1 s Pythonem 3.14. Integrace nevyžaduje externí Python knihovnu.
 
 ## Instalace
 
@@ -68,9 +68,17 @@ Heslo je uložené ve standardním úložišti konfiguračních záznamů Home A
 
 Podrobnosti zpráv a známek se standardně do atributů nevkládají. Povolíte-li je, mohou se osobní údaje ukládat do Recorderu a zobrazovat dalším uživatelům Home Assistantu. Seznamy atributů jsou omezeny na 50 položek; úplná data lze získat přes `query`. Názvy entit a zařízení identifikují školní účet i při vypnutých podrobnostech. Diagnostika obsahuje jen stav integrace a chyby endpointů, bez údajů žáků, URL, hesel a tokenů. HTTP přesměrování se automaticky nenásledují; nastavte přímo cílovou adresu školy.
 
+## Režim pouze pro čtení a zápisy do školy
+
+V **Nastavení → Zařízení a služby → Bakaláři → Konfigurovat** lze pro každý účet zapnout **Pouze pro čtení**. Výchozí stav je vypnutý, aby aktualizace zachovala fungování dosavadních automatizací.
+
+Při zapnutí zůstanou dostupné senzory, kalendáře, čtení úkolů, příloh a dokumentované dotazy API včetně čtecích POST seznamů Komens. Zůstává i předvídání průměru, které neukládá známky. Integrace odmítne označení zprávy za přečtenou, změnu dokončení úkolu, odeslání Komens či omluvenky, podpis známek, zápis třídní knihy a vytvoření webové přihlašovací URL. Seznam úkolů v rozhraní nenabízí změnu stavu. Blokace se kontroluje i při přímém zavolání akce.
+
+**Mimo tento režim zápisové akce mění skutečná data na serveru školy.** Přepnutí úkolu v seznamu To-do se propíše do Bakalářů; `send_message` odesílá zprávy, `write_classbook` zapisuje třídní knihu a `confirm_marks` podepisuje známky. `web_login` vrací jednorázový přístup k účtu. Běžná automatická aktualizace žádnou z těchto operací nespouští. Přihlašování a obnova přístupového tokenu probíhají také v režimu pouze pro čtení, protože jsou nutné k načtení dat.
+
 ## Akce
 
-Všechny akce vyžadují `entry_id` konkrétního účtu. V editoru akcí je pro něj výběr konfiguračního záznamu. Akce `query`, `predict_marks`, `get_attachment` a `web_login` vyžadují návratovou proměnnou; vrací slovník s klíčem `result`. Akce zápisu se provádějí až při jejich explicitním zavolání. Běžné načítání dat zprávy neoznačuje jako přečtené ani nepodepisuje známky.
+Akce jsou zaregistrované po načtení integrace i v době, kdy účet není dostupný nebo byl odpojený. Jejich zavolání pro nenačtený účet vrátí srozumitelnou chybu. Všechny akce vyžadují `entry_id` konkrétního účtu. V editoru akcí je pro něj výběr konfiguračního záznamu. Akce `query`, `predict_marks`, `get_attachment` a `web_login` vyžadují návratovou proměnnou; vrací slovník s klíčem `result`. Akce zápisu se provádějí až při jejich explicitním zavolání. Běžné načítání dat zprávy neoznačuje jako přečtené ani nepodepisuje známky.
 
 | Akce | Účel / další pole |
 | --- | --- |
@@ -137,10 +145,12 @@ python3.14 -m venv .venv
 .venv/bin/python scripts/build_release.py
 ```
 
-Testy používají skutečné třídy Home Assistantu a simulované HTTP odpovědi nebo klienty; pokrývají autentizaci, souběh, chyby, formuláře, akce, entity a převody kalendáře. Neověřují dostupnost modulů konkrétní školy ani skutečné odeslání Komens či učitelského zápisu. Bez přístupu k živému účtu nelze potvrdit end-to-end kompatibilitu konkrétní instalace školy. CI provádí stejné kontroly na Linuxu. Skript sestavení vytvoří instalovatelný ZIP v `dist/` pouze ze souborů komponenty a návodu.
+Testy používají skutečné třídy Home Assistantu a simulované HTTP odpovědi nebo klienty; pokrývají autentizaci, souběh, chyby, formuláře, akce, entity a převody kalendáře. Neověřují dostupnost modulů konkrétní školy ani skutečné odeslání Komens či učitelského zápisu. Bez přístupu k živému účtu nelze potvrdit end-to-end kompatibilitu konkrétní instalace školy. CI provádí stejné kontroly na Linuxu proti oběma uvedeným verzím HA. Skript sestavení vytvoří instalovatelný ZIP v `dist/` pouze ze souborů komponenty a návodu.
 
 ## Spolupráce a licence
 
 Chyby a návrhy hlaste přes [české formuláře](https://github.com/michalmedvecky/bakalari-ha/issues/new/choose). Postup vývoje a vydávání popisuje [CONTRIBUTING.md](CONTRIBUTING.md), změny jednotlivých verzí [CHANGELOG.md](CHANGELOG.md). Pro bezpečnostní problémy použijte postup v [SECURITY.md](SECURITY.md).
+
+Výsledek instalačního ověření a hranice funkčního testování shrnuje [ověřovací protokol](docs/OVERENI.md).
 
 Zdrojový kód je dostupný pod [licencí MIT](LICENSE). Český přehled podmínek najdete v [dokumentaci licence](docs/LICENCE.md). Projekt je nezávislý na společnosti Bakaláři a nevztahuje se na něj její oficiální podpora.

@@ -10,6 +10,7 @@ from homeassistant.core import callback
 from homeassistant.exceptions import HomeAssistantError
 
 from .api import BakalariError, path_id
+from .const import CONF_READ_ONLY, DOMAIN
 from .entity import BakalariEntity
 from .models import SCHOOL_TZ, homework_finished, parse_datetime, plain_text
 
@@ -27,7 +28,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
                     HomeworkList(
                         entry.runtime_data,
                         "homeworks",
-                        "Domácí úkoly",
+                        "homeworks",
                         "mdi:clipboard-list",
                     )
                 ]
@@ -38,7 +39,11 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
 
 class HomeworkList(BakalariEntity, TodoListEntity):
-    _attr_supported_features = TodoListEntityFeature.UPDATE_TODO_ITEM
+    @property
+    def supported_features(self):
+        if self.coordinator.entry.options.get(CONF_READ_ONLY, False):
+            return TodoListEntityFeature(0)
+        return TodoListEntityFeature.UPDATE_TODO_ITEM
 
     @property
     def todo_items(self):
@@ -67,6 +72,10 @@ class HomeworkList(BakalariEntity, TodoListEntity):
         return items
 
     async def async_update_todo_item(self, item):
+        if self.coordinator.entry.options.get(CONF_READ_ONLY, False):
+            raise HomeAssistantError(
+                translation_domain=DOMAIN, translation_key="read_only"
+            )
         original = next((x for x in self.todo_items if x.uid == item.uid), None)
         if original is None:
             raise HomeAssistantError("Neznámý domácí úkol")

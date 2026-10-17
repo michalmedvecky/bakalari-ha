@@ -49,6 +49,8 @@ Parametry jako `date`, `from`, `to`, `sort` a `search` předávejte v `parameter
 
 ## Zápisy a zvláštní operace
 
+Volitelný režim **Pouze pro čtení** blokuje zápisy a akci `web_login`. Čtecí dotazy včetně POST seznamů a výpočet `predict_marks` ponechává dostupné.
+
 | Akce | Metoda | Cesta |
 | --- | --- | --- |
 | `mark_message_read` | PUT | `/api/3/komens/message/{id}/mark-as-read` |

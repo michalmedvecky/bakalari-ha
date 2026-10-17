@@ -4,12 +4,18 @@ from unittest.mock import AsyncMock, patch
 from homeassistant import loader
 from homeassistant.config_entries import ConfigEntryState
 
-from custom_components.bakalari import async_setup_entry, async_unload_entry
+from custom_components.bakalari import (
+    async_setup,
+    async_setup_entry,
+    async_unload_entry,
+)
 from custom_components.bakalari.const import PLATFORMS
 
 
 async def test_setup_and_unload_lifecycle(hass, entry):
     hass.config_entries._entries[entry.entry_id] = entry
+    assert await async_setup(hass, {})
+    assert hass.services.has_service("bakalari", "query")
     entry._async_set_state(hass, ConfigEntryState.SETUP_IN_PROGRESS, None)
     with (
         patch("custom_components.bakalari.async_get_clientsession"),
@@ -36,7 +42,7 @@ async def test_setup_and_unload_lifecycle(hass, entry):
         forward.assert_awaited_once_with(entry, PLATFORMS)
         assert await async_unload_entry(hass, entry)
         unload.assert_awaited_once_with(entry, PLATFORMS)
-        assert not hass.services.has_service("bakalari", "query")
+        assert hass.services.has_service("bakalari", "query")
         await entry._async_process_on_unload(hass)
 
 
@@ -54,3 +60,14 @@ async def test_homeassistant_loader_finds_manifest_and_platforms(hass):
         [str(p) for p in PLATFORMS] + ["config_flow", "diagnostics"]
     )
     assert len(platforms) == len(PLATFORMS) + 2
+
+
+async def test_actions_registered_before_any_account_and_setup_is_idempotent(hass):
+    from custom_components.bakalari.services import SERVICE_NAMES
+
+    assert not hass.config_entries.async_entries("bakalari")
+    assert await async_setup(hass, {})
+    first = hass.services.async_services()["bakalari"]["query"]
+    assert set(hass.services.async_services()["bakalari"]) == set(SERVICE_NAMES)
+    assert await async_setup(hass, {})
+    assert hass.services.async_services()["bakalari"]["query"] is first

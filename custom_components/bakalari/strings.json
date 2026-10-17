@@ -49,9 +49,234 @@
         "data": {
           "scan_interval": "Update interval (seconds)",
           "modules": "Polled modules",
+          "read_only": "Read-only mode",
           "expose_details": "Expose detailed entity attributes"
         },
         "description": "Details may contain personal information and be stored in history. Changes apply after saving."
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "new_marks": {
+        "name": "New marks"
+      },
+      "homework_count": {
+        "name": "Open homeworks"
+      },
+      "homeworks_pending": {
+        "name": "Pending homeworks in period"
+      },
+      "unread": {
+        "name": "Unread messages"
+      },
+      "noticeboard_unread": {
+        "name": "Unread noticeboard messages"
+      },
+      "received": {
+        "name": "Received messages"
+      },
+      "noticeboard": {
+        "name": "Noticeboard messages"
+      },
+      "absence_unexcused": {
+        "name": "Unexcused lessons"
+      },
+      "absence_unresolved": {
+        "name": "Unresolved absences"
+      },
+      "absence_excused": {
+        "name": "Excused lessons"
+      },
+      "substitutions": {
+        "name": "Timetable changes"
+      },
+      "subjects": {
+        "name": "Subjects"
+      },
+      "final_marks": {
+        "name": "Certificates"
+      },
+      "measures": {
+        "name": "Pedagogical measures"
+      },
+      "balance": {
+        "name": "Class fund balance"
+      },
+      "subject_average": {
+        "name": "{subject} average"
+      }
+    },
+    "calendar": {
+      "timetable": {
+        "name": "Timetable"
+      },
+      "events": {
+        "name": "School events"
+      }
+    },
+    "binary_sensor": {
+      "student_present": {
+        "name": "At school"
+      }
+    },
+    "todo": {
+      "homeworks": {
+        "name": "Homeworks"
+      }
+    },
+    "button": {
+      "refresh": {
+        "name": "Refresh"
+      }
+    }
+  },
+  "exceptions": {
+    "read_only": {
+      "message": "The account is in read-only mode. Writes and creating web login URLs are disabled."
+    }
+  },
+  "services": {
+    "refresh": {
+      "name": "Refresh",
+      "description": "Refreshes all enabled modules for the account.",
+      "fields": {
+        "entry_id": {
+          "name": "Bakaláři account"
+        }
+      }
+    },
+    "query": {
+      "name": "Query API",
+      "description": "Returns the documented endpoint response to response_variable.",
+      "fields": {
+        "entry_id": {
+          "name": "Bakaláři account"
+        },
+        "endpoint": {
+          "name": "Endpoint"
+        },
+        "id": {
+          "name": "Identifier"
+        },
+        "parameters": {
+          "name": "Query parameters",
+          "description": "Use ISO dates for from and to. Supply identifiers without URL encoding."
+        }
+      }
+    },
+    "mark_message_read": {
+      "name": "Mark message as read",
+      "description": "Marks a message as read on the school server.",
+      "fields": {
+        "entry_id": {
+          "name": "Bakaláři account"
+        },
+        "message_id": {
+          "name": "Message ID"
+        }
+      }
+    },
+    "set_homework_done": {
+      "name": "Set homework completion",
+      "description": "Changes the student's Finished flag on the school server.",
+      "fields": {
+        "entry_id": {
+          "name": "Bakaláři account"
+        },
+        "homework_id": {
+          "name": "Homework ID"
+        },
+        "done": {
+          "name": "Completed"
+        }
+      }
+    },
+    "confirm_marks": {
+      "name": "Confirm marks",
+      "description": "Confirms the selected marks on the school server.",
+      "fields": {
+        "entry_id": {
+          "name": "Bakaláři account"
+        },
+        "mark_ids": {
+          "name": "Mark IDs (list)"
+        }
+      }
+    },
+    "predict_marks": {
+      "name": "Predict average",
+      "description": "Returns the school's prediction using existing and hypothetical marks.",
+      "fields": {
+        "entry_id": {
+          "name": "Bakaláři account"
+        },
+        "marks": {
+          "name": "Marks (list of objects)"
+        }
+      }
+    },
+    "send_message": {
+      "name": "Send Komens message",
+      "description": "Sends a message to the selected recipients. Query message_types for available types and recipients.",
+      "fields": {
+        "entry_id": {
+          "name": "Bakaláři account"
+        },
+        "message_type": {
+          "name": "Message type"
+        },
+        "title": {
+          "name": "Title"
+        },
+        "text": {
+          "name": "Text"
+        },
+        "recipient_type": {
+          "name": "Recipient type"
+        },
+        "recipients": {
+          "name": "Recipient IDs (list)"
+        },
+        "options": {
+          "name": "Additional message fields"
+        }
+      }
+    },
+    "write_classbook": {
+      "name": "Write classbook",
+      "description": "Writes a classbook record using teacher permissions. record.Id must match record_id.",
+      "fields": {
+        "entry_id": {
+          "name": "Bakaláři account"
+        },
+        "record_id": {
+          "name": "Record ID"
+        },
+        "record": {
+          "name": "Record"
+        }
+      }
+    },
+    "get_attachment": {
+      "name": "Get attachment",
+      "description": "Returns Base64 content and MIME type for an attachment up to 5 MiB.",
+      "fields": {
+        "entry_id": {
+          "name": "Bakaláři account"
+        },
+        "attachment_id": {
+          "name": "Attachment ID"
+        }
+      }
+    },
+    "web_login": {
+      "name": "Web login",
+      "description": "Returns a one-time login URL. Treat this URL as an account credential.",
+      "fields": {
+        "entry_id": {
+          "name": "Bakaláři account"
+        }
       }
     }
   }

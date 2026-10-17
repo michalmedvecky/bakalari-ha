@@ -1,6 +1,8 @@
 .venv/
 .ha-venv/
 .ha-test/
+.ha-current/
+.ha-report/
 __pycache__/
 .pytest_cache/
 .ruff_cache/

@@ -5,20 +5,17 @@ import pytest
 import voluptuous as vol
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 
+from custom_components.bakalari import async_setup, async_unload_entry
 from custom_components.bakalari.api import AuthenticationError
-from custom_components.bakalari.services import (
-    async_register_services,
-    async_remove_services,
-)
+from custom_components.bakalari.services import WRITE_SERVICES
 
 
 @pytest.fixture
 async def account(hass, entry):
-    api = AsyncMock()
-    api.url = "https://school.example"
+    api = SimpleNamespace(url="https://school.example", request=AsyncMock())
     entry.runtime_data = SimpleNamespace(client=api, async_request_refresh=AsyncMock())
     hass.config_entries._entries[entry.entry_id] = entry
-    async_register_services(hass)
+    await async_setup(hass, {})
     return entry
 
 
@@ -129,9 +126,21 @@ async def test_auth_failure_starts_reauth(hass, account):
     reauth.assert_called_once_with(hass)
 
 
-async def test_services_removed_with_last_account(hass, account):
-    async_remove_services(hass, account.entry_id)
-    assert not hass.services.has_service("bakalari", "query")
+async def test_services_survive_last_account_unload(hass, account):
+    from homeassistant.config_entries import ConfigEntryState
+
+    with patch.object(
+        type(hass.config_entries),
+        "async_unload_platforms",
+        new_callable=AsyncMock,
+        return_value=True,
+    ):
+        assert await async_unload_entry(hass, account)
+    account._async_set_state(hass, ConfigEntryState.NOT_LOADED, None)
+    assert hass.services.has_service("bakalari", "query")
+    with pytest.raises(ServiceValidationError):
+        await call(hass, account, "query", endpoint="user")
+    account.runtime_data.client.request.assert_not_called()
 
 
 async def test_unknown_entry_rejected(hass, account):
@@ -139,3 +148,47 @@ async def test_unknown_entry_rejected(hass, account):
         await hass.services.async_call(
             "bakalari", "refresh", {"entry_id": "missing"}, blocking=True
         )
+
+
+@pytest.mark.parametrize(
+    ("action", "parameters"),
+    [
+        ("mark_message_read", {"message_id": "1"}),
+        ("set_homework_done", {"homework_id": "1", "done": True}),
+        ("confirm_marks", {"mark_ids": ["1"]}),
+        (
+            "send_message",
+            {
+                "title": "Test",
+                "text": "Text",
+                "recipient_type": "U",
+                "recipients": ["T1"],
+            },
+        ),
+        ("write_classbook", {"record_id": "1", "record": {"Id": "1"}}),
+        ("web_login", {}),
+    ],
+)
+async def test_read_only_blocks_all_mutations(hass, account, action, parameters):
+    hass.config_entries.async_update_entry(account, options={"read_only": True})
+    assert action in WRITE_SERVICES
+    with pytest.raises(ServiceValidationError) as error:
+        await call(hass, account, action, **parameters)
+    assert error.value.translation_key == "read_only"
+    account.runtime_data.client.request.assert_not_called()
+    account.runtime_data.async_request_refresh.assert_not_called()
+
+
+async def test_read_only_keeps_post_queries_and_predictions(hass, account):
+    hass.config_entries.async_update_entry(account, options={"read_only": True})
+    account.runtime_data.client.request.return_value = {"Messages": []}
+    await call(hass, account, "query", endpoint="received")
+    await call(
+        hass,
+        account,
+        "predict_marks",
+        marks=[{"Id": None, "MarkText": "1", "SubjectId": "M"}],
+    )
+    await call(hass, account, "refresh")
+    assert account.runtime_data.client.request.await_count == 2
+    account.runtime_data.async_request_refresh.assert_awaited_once()

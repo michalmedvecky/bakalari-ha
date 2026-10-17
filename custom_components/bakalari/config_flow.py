@@ -17,7 +17,14 @@ from homeassistant.helpers import selector
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import AuthenticationError, BakalariClient, BakalariError, normalize_url
-from .const import CONF_EXPOSE_DETAILS, CONF_MODULES, DEFAULT_INTERVAL, DOMAIN, MODULES
+from .const import (
+    CONF_EXPOSE_DETAILS,
+    CONF_MODULES,
+    CONF_READ_ONLY,
+    DEFAULT_INTERVAL,
+    DOMAIN,
+    MODULES,
+)
 
 
 def account_id(url, uid):
@@ -125,6 +132,10 @@ class BakalariOptionsFlow(config_entries.OptionsFlow):
                     vol.Required(
                         CONF_EXPOSE_DETAILS,
                         default=options.get(CONF_EXPOSE_DETAILS, False),
+                    ): bool,
+                    vol.Required(
+                        CONF_READ_ONLY,
+                        default=options.get(CONF_READ_ONLY, False),
                     ): bool,
                 }
             ),

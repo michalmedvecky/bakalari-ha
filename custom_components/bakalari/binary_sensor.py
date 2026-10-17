@@ -20,7 +20,10 @@ async def async_setup_entry(hass, entry, async_add_entities):
             async_add_entities(
                 [
                     StudentPresent(
-                        entry.runtime_data, "student_present", "Ve škole", "mdi:school"
+                        entry.runtime_data,
+                        "student_present",
+                        "student_present",
+                        "mdi:school",
                     )
                 ]
             )

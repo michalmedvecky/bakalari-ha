@@ -8,7 +8,7 @@ from .entity import BakalariEntity
 
 async def async_setup_entry(hass, entry, async_add_entities):
     async_add_entities(
-        [RefreshButton(entry.runtime_data, "user", "Aktualizovat", "mdi:refresh")]
+        [RefreshButton(entry.runtime_data, "user", "refresh", "mdi:refresh")]
     )
 
 

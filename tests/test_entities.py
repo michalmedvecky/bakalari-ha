@@ -1,4 +1,5 @@
 from datetime import datetime
+from types import SimpleNamespace
 from unittest.mock import AsyncMock
 from zoneinfo import ZoneInfo
 
@@ -15,8 +16,7 @@ from custom_components.bakalari.todo import HomeworkList
 
 @pytest.fixture
 async def coordinator(hass, entry):
-    client = AsyncMock()
-    client.url = "https://school.example"
+    client = SimpleNamespace(url="https://school.example", request=AsyncMock())
     value = BakalariCoordinator(hass, entry, client)
     value.async_set_updated_data(
         {
@@ -46,7 +46,9 @@ async def coordinator(hass, entry):
     )
     value.async_request_refresh = AsyncMock()
     entry.runtime_data = value
-    return value
+    yield value
+    await entry._async_process_on_unload(hass)
+    del entry.runtime_data
 
 
 async def test_subject_average_preserves_server_format_and_hides_details(coordinator):
@@ -124,7 +126,9 @@ async def test_calendar_range_reads_server_not_just_current_cache(coordinator, h
     assert results[0].end.isoformat() == "2026-11-03"
 
 
-async def test_diagnostics_does_not_leak_credentials_or_content(coordinator, hass):
+async def test_diagnostics_does_not_leak_credentials_or_content(
+    coordinator, hass, loaded_integration
+):
     import json
 
     result = await async_get_config_entry_diagnostics(hass, coordinator.entry)
@@ -132,3 +136,55 @@ async def test_diagnostics_does_not_leak_credentials_or_content(coordinator, has
     for secret in ("secret", "school.example", "MarkText", "UserUID", "Test account"):
         assert secret not in text
     assert result["last_update_success"]
+
+
+async def test_diagnostics_uses_loader_version(coordinator, hass):
+    from types import SimpleNamespace
+    from unittest.mock import patch
+
+    with patch(
+        "custom_components.bakalari.diagnostics.async_get_integration",
+        new_callable=AsyncMock,
+        return_value=SimpleNamespace(version="9.8.7"),
+    ):
+        result = await async_get_config_entry_diagnostics(hass, coordinator.entry)
+    assert result["integration_version"] == "9.8.7"
+
+
+async def test_read_only_homeworks_hide_updates_and_reject_direct_calls(
+    coordinator, hass
+):
+    from homeassistant.components.todo import TodoListEntityFeature
+
+    hass.config_entries._entries[coordinator.entry.entry_id] = coordinator.entry
+    entity = HomeworkList(coordinator, "homeworks", "homeworks", "mdi:clipboard")
+    assert entity.supported_features == TodoListEntityFeature.UPDATE_TODO_ITEM
+    hass.config_entries.async_update_entry(
+        coordinator.entry, options={"read_only": True}
+    )
+    assert entity.supported_features == 0
+    assert entity.todo_items[0].uid == "A["
+    with pytest.raises(HomeAssistantError) as error:
+        await entity.async_update_todo_item(
+            TodoItem(uid="A[", status=TodoItemStatus.COMPLETED)
+        )
+    assert error.value.translation_key == "read_only"
+    coordinator.client.request.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    ("language", "expected"),
+    [("cs", "Matematika – průměr"), ("en", "Matematika average")],
+)
+async def test_subject_name_uses_ha_translations(
+    coordinator, hass, loaded_integration, language, expected
+):
+    from types import SimpleNamespace
+
+    from homeassistant.helpers.translation import async_get_translations
+
+    translations = await async_get_translations(hass, language, "entity", {"bakalari"})
+    entity = SubjectSensor(coordinator, "M", "Matematika")
+    entity.platform_data = SimpleNamespace(platform_name="bakalari", domain="sensor")
+    assert entity._name_internal(None, translations) == expected
+    assert entity.unique_id == "account-id_marks_M"

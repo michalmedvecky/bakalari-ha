@@ -49,9 +49,234 @@
         "data": {
           "scan_interval": "Interval aktualizace (sekundy)",
           "modules": "Načítané moduly",
+          "read_only": "Pouze pro čtení",
           "expose_details": "Zveřejnit podrobnosti v atributech entit"
         },
         "description": "Podrobnosti mohou obsahovat osobní údaje a ukládat se do historie. Změny se použijí po uložení."
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "new_marks": {
+        "name": "Nové známky"
+      },
+      "homework_count": {
+        "name": "Otevřené úkoly"
+      },
+      "homeworks_pending": {
+        "name": "Nedokončené úkoly v období"
+      },
+      "unread": {
+        "name": "Nepřečtené zprávy"
+      },
+      "noticeboard_unread": {
+        "name": "Nepřečtená nástěnka"
+      },
+      "received": {
+        "name": "Přijaté zprávy"
+      },
+      "noticeboard": {
+        "name": "Zprávy na nástěnce"
+      },
+      "absence_unexcused": {
+        "name": "Neomluvené hodiny"
+      },
+      "absence_unresolved": {
+        "name": "Nevyřešené absence"
+      },
+      "absence_excused": {
+        "name": "Omluvené hodiny"
+      },
+      "substitutions": {
+        "name": "Změny rozvrhu"
+      },
+      "subjects": {
+        "name": "Předměty"
+      },
+      "final_marks": {
+        "name": "Vysvědčení"
+      },
+      "measures": {
+        "name": "Výchovná opatření"
+      },
+      "balance": {
+        "name": "Zůstatek třídního fondu"
+      },
+      "subject_average": {
+        "name": "{subject} – průměr"
+      }
+    },
+    "calendar": {
+      "timetable": {
+        "name": "Rozvrh"
+      },
+      "events": {
+        "name": "Školní akce"
+      }
+    },
+    "binary_sensor": {
+      "student_present": {
+        "name": "Ve škole"
+      }
+    },
+    "todo": {
+      "homeworks": {
+        "name": "Domácí úkoly"
+      }
+    },
+    "button": {
+      "refresh": {
+        "name": "Aktualizovat"
+      }
+    }
+  },
+  "exceptions": {
+    "read_only": {
+      "message": "Účet je v režimu pouze pro čtení. Zápisy a vytváření webového přihlášení jsou zakázané."
+    }
+  },
+  "services": {
+    "refresh": {
+      "name": "Aktualizovat",
+      "description": "Načte znovu všechny povolené moduly.",
+      "fields": {
+        "entry_id": {
+          "name": "Účet Bakalářů"
+        }
+      }
+    },
+    "query": {
+      "name": "Načíst data API",
+      "description": "Vrací neupravená data dokumentovaného endpointu do response_variable.",
+      "fields": {
+        "entry_id": {
+          "name": "Účet Bakalářů"
+        },
+        "endpoint": {
+          "name": "Endpoint"
+        },
+        "id": {
+          "name": "Identifikátor"
+        },
+        "parameters": {
+          "name": "Parametry dotazu",
+          "description": "Parametry from a to zadávejte jako ISO datum. ID zadávejte bez URL kódování."
+        }
+      }
+    },
+    "mark_message_read": {
+      "name": "Označit zprávu jako přečtenou",
+      "description": "Změní stav zprávy v Bakalářích.",
+      "fields": {
+        "entry_id": {
+          "name": "Účet Bakalářů"
+        },
+        "message_id": {
+          "name": "ID zprávy"
+        }
+      }
+    },
+    "set_homework_done": {
+      "name": "Dokončení úkolu",
+      "description": "Nastaví žákovský příznak Finished.",
+      "fields": {
+        "entry_id": {
+          "name": "Účet Bakalářů"
+        },
+        "homework_id": {
+          "name": "ID úkolu"
+        },
+        "done": {
+          "name": "Hotovo"
+        }
+      }
+    },
+    "confirm_marks": {
+      "name": "Podepsat známky",
+      "description": "Odešle podpis vybraných známek.",
+      "fields": {
+        "entry_id": {
+          "name": "Účet Bakalářů"
+        },
+        "mark_ids": {
+          "name": "ID známek (seznam)"
+        }
+      }
+    },
+    "predict_marks": {
+      "name": "Předvídat průměr",
+      "description": "Vrací předpověď školy; seznam obsahuje existující i hypotetické známky.",
+      "fields": {
+        "entry_id": {
+          "name": "Účet Bakalářů"
+        },
+        "marks": {
+          "name": "Známky (seznam objektů)"
+        }
+      }
+    },
+    "send_message": {
+      "name": "Odeslat Komens",
+      "description": "Odešle zprávu zvoleným příjemcům. Typy a příjemce zjistíte dotazem message_types.",
+      "fields": {
+        "entry_id": {
+          "name": "Účet Bakalářů"
+        },
+        "message_type": {
+          "name": "Typ zprávy"
+        },
+        "title": {
+          "name": "Nadpis"
+        },
+        "text": {
+          "name": "Text"
+        },
+        "recipient_type": {
+          "name": "Typ příjemce"
+        },
+        "recipients": {
+          "name": "ID příjemců (seznam)"
+        },
+        "options": {
+          "name": "Další pole zprávy"
+        }
+      }
+    },
+    "write_classbook": {
+      "name": "Zapsat třídní knihu",
+      "description": "Pro učitele: zapíše záznam podle oprávnění účtu. record.Id musí odpovídat record_id.",
+      "fields": {
+        "entry_id": {
+          "name": "Účet Bakalářů"
+        },
+        "record_id": {
+          "name": "ID záznamu"
+        },
+        "record": {
+          "name": "Záznam"
+        }
+      }
+    },
+    "get_attachment": {
+      "name": "Načíst přílohu",
+      "description": "Vrací Base64 a MIME typ přílohy (nejvýše 5 MiB).",
+      "fields": {
+        "entry_id": {
+          "name": "Účet Bakalářů"
+        },
+        "attachment_id": {
+          "name": "ID přílohy"
+        }
+      }
+    },
+    "web_login": {
+      "name": "Přihlášení na web",
+      "description": "Vrací jednorázovou přihlašovací URL. Uchovávejte ji jako přihlašovací údaj.",
+      "fields": {
+        "entry_id": {
+          "name": "Účet Bakalářů"
+        }
       }
     }
   }

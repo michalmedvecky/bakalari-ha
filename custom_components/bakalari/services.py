@@ -8,7 +8,7 @@ from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import config_validation as cv
 
 from .api import AuthenticationError, BakalariError, path_id
-from .const import DOMAIN
+from .const import CONF_READ_ONLY, DOMAIN
 from .endpoints import READS, validate_result
 
 SERVICE_NAMES = (
@@ -24,6 +24,16 @@ SERVICE_NAMES = (
     "web_login",
 )
 BASE = {vol.Required("entry_id"): cv.string}
+WRITE_SERVICES = frozenset(
+    {
+        "mark_message_read",
+        "set_homework_done",
+        "confirm_marks",
+        "send_message",
+        "write_classbook",
+        "web_login",
+    }
+)
 
 
 def async_register_services(hass):
@@ -47,6 +57,10 @@ def async_register_services(hass):
         client = coordinator.client
         data = call.data
         name = call.service
+        if name in WRITE_SERVICES and entry.options.get(CONF_READ_ONLY, False):
+            raise ServiceValidationError(
+                translation_domain=DOMAIN, translation_key="read_only"
+            )
         result = None
         try:
             if name == "refresh":
@@ -201,15 +215,3 @@ def async_register_services(hass):
             if name in ("send_message", "write_classbook")
             else SupportsResponse.NONE,
         )
-
-
-def async_remove_services(hass, unloading_id):
-    from homeassistant.config_entries import ConfigEntryState
-
-    if any(
-        e.entry_id != unloading_id and e.state is ConfigEntryState.LOADED
-        for e in hass.config_entries.async_entries(DOMAIN)
-    ):
-        return
-    for name in SERVICE_NAMES:
-        hass.services.async_remove(DOMAIN, name)

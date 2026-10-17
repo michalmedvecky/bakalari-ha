@@ -9,74 +9,74 @@ from .models import homework_finished
 
 # Klíč, název, ikona a převod hodnoty; podrobné atributy jsou volitelné.
 DESCRIPTIONS = (
-    ("new_marks", "Nové známky", "mdi:numeric", lambda d: d),
-    ("homework_count", "Otevřené úkoly", "mdi:clipboard-text", lambda d: d),
+    ("new_marks", "new_marks", "mdi:numeric", lambda d: d),
+    ("homework_count", "homework_count", "mdi:clipboard-text", lambda d: d),
     (
         "homeworks",
-        "Nedokončené úkoly v období",
+        "homeworks_pending",
         "mdi:clipboard-check",
         lambda d: sum(
             not homework_finished(h) and not h.get("Closed", False)
             for h in d.get("Homeworks", []) or []
         ),
     ),
-    ("unread", "Nepřečtené zprávy", "mdi:email", lambda d: d),
-    ("noticeboard_unread", "Nepřečtená nástěnka", "mdi:bulletin-board", lambda d: d),
+    ("unread", "unread", "mdi:email", lambda d: d),
+    ("noticeboard_unread", "noticeboard_unread", "mdi:bulletin-board", lambda d: d),
     (
         "received",
-        "Přijaté zprávy",
+        "received",
         "mdi:email-outline",
         lambda d: len(d.get("Messages", []) or []),
     ),
     (
         "noticeboard",
-        "Zprávy na nástěnce",
+        "noticeboard",
         "mdi:bulletin-board",
         lambda d: len(d.get("Messages", []) or []),
     ),
     (
         "absence",
-        "Neomluvené hodiny",
+        "absence_unexcused",
         "mdi:account-alert",
         lambda d: sum(x.get("Missed", 0) or 0 for x in d.get("Absences", []) or []),
     ),
     (
         "absence",
-        "Nevyřešené absence",
+        "absence_unresolved",
         "mdi:account-question",
         lambda d: sum(x.get("Unsolved", 0) or 0 for x in d.get("Absences", []) or []),
     ),
     (
         "absence",
-        "Omluvené hodiny",
+        "absence_excused",
         "mdi:account-clock",
         lambda d: sum(x.get("Ok", 0) or 0 for x in d.get("Absences", []) or []),
     ),
     (
         "substitutions",
-        "Změny rozvrhu",
+        "substitutions",
         "mdi:calendar-edit",
         lambda d: len(d.get("Changes", []) or []),
     ),
     (
         "subjects",
-        "Předměty",
+        "subjects",
         "mdi:bookshelf",
         lambda d: len(d.get("Subjects", []) or []),
     ),
     (
         "final_marks",
-        "Vysvědčení",
+        "final_marks",
         "mdi:certificate",
         lambda d: len(d.get("CertificateTerms", []) or []),
     ),
     (
         "measures",
-        "Výchovná opatření",
+        "measures",
         "mdi:school",
         lambda d: len(d.get("PedagogicalMeasures", []) or []),
     ),
-    ("balance", "Zůstatek třídního fondu", "mdi:cash", lambda d: d.get("Balance")),
+    ("balance", "balance", "mdi:cash", lambda d: d.get("Balance")),
 )
 
 
@@ -87,12 +87,14 @@ async def async_setup_entry(hass, entry, async_add_entities):
     @callback
     def discover():
         entities = []
-        for index, (key, name, icon, extract) in enumerate(DESCRIPTIONS):
+        for index, (key, translation_key, icon, extract) in enumerate(DESCRIPTIONS):
             identity = f"{key}_{index}"
             if key in coordinator.data and identity not in added:
                 added.add(identity)
                 entities.append(
-                    BakalariSensor(coordinator, key, name, icon, extract, index)
+                    BakalariSensor(
+                        coordinator, key, translation_key, icon, extract, index
+                    )
                 )
         for subject in coordinator.data.get("marks", {}).get("Subjects", []) or []:
             subject_id = str((subject.get("Subject") or {}).get("Id", ""))
@@ -113,8 +115,8 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
 
 class BakalariSensor(BakalariEntity, SensorEntity):
-    def __init__(self, coordinator, key, name, icon, extract, index):
-        super().__init__(coordinator, key, name, icon)
+    def __init__(self, coordinator, key, translation_key, icon, extract, index):
+        super().__init__(coordinator, key, translation_key, icon)
         self._attr_unique_id += f"_{index}"
         self.extract = extract
 
@@ -141,7 +143,8 @@ class BakalariSensor(BakalariEntity, SensorEntity):
 
 class SubjectSensor(BakalariEntity, SensorEntity):
     def __init__(self, coordinator, subject_id, name):
-        super().__init__(coordinator, "marks", f"{name} – průměr", "mdi:counter")
+        super().__init__(coordinator, "marks", "subject_average", "mdi:counter")
+        self._attr_translation_placeholders = {"subject": name}
         self.subject_id = subject_id
         self._attr_unique_id += f"_{subject_id}"
 

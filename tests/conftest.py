@@ -2,6 +2,7 @@
 
 import sys
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 from homeassistant.config_entries import ConfigEntries, ConfigEntry, ConfigEntryState
@@ -14,8 +15,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 async def hass(tmp_path):
     instance = HomeAssistant(str(tmp_path))
     instance.config_entries = ConfigEntries(instance, {})
-    yield instance
-    await instance.async_stop(force=True)
+    # Účty v jednotkových testech jsou pouze v paměti, bez skutečného úložiště HA.
+    with patch.object(ConfigEntries, "_async_schedule_save"):
+        yield instance
+        await instance.async_stop(force=True)
 
 
 @pytest.fixture
@@ -37,3 +40,15 @@ def entry():
         subentries_data=[],
         state=ConfigEntryState.LOADED,
     )
+
+
+@pytest.fixture
+async def loaded_integration(hass):
+    from homeassistant import loader
+
+    root = Path(__file__).resolve().parents[1]
+    (Path(hass.config.config_dir) / "custom_components").symlink_to(
+        root / "custom_components", target_is_directory=True
+    )
+    loader.async_setup(hass)
+    return await loader.async_get_integration(hass, "bakalari")

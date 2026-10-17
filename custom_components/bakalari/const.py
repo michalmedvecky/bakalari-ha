@@ -12,6 +12,7 @@ PLATFORMS = [
 ]
 CONF_MODULES = "modules"
 CONF_EXPOSE_DETAILS = "expose_details"
+CONF_READ_ONLY = "read_only"
 DEFAULT_INTERVAL = 900
 MODULES = [
     "Marks",

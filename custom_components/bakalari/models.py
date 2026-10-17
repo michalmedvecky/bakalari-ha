@@ -86,7 +86,7 @@ def timetable_events(data):
                     )
 
                 start, end = lesson_time("BeginTime"), lesson_time("EndTime")
-            except KeyError, ValueError, IndexError:
+            except (KeyError, ValueError, IndexError):
                 continue
             if end <= start:
                 continue

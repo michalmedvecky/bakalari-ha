@@ -11,6 +11,7 @@ sys.path.insert(0, str(ROOT))
 from custom_components.bakalari.endpoints import READS  # noqa: E402
 
 DEST = ROOT / "custom_components/bakalari"
+translations = {}
 for lang in ("cs", "en"):
     cs = lang == "cs"
     labels = {
@@ -64,6 +65,7 @@ for lang in ("cs", "en"):
                         if cs
                         else "Update interval (seconds)",
                         "modules": "Načítané moduly" if cs else "Polled modules",
+                        "read_only": "Pouze pro čtení" if cs else "Read-only mode",
                         "expose_details": "Zveřejnit podrobnosti v atributech entit"
                         if cs
                         else "Expose detailed entity attributes",
@@ -75,13 +77,7 @@ for lang in ("cs", "en"):
             }
         },
     }
-    (DEST / "translations" / f"{lang}.json").write_text(
-        json.dumps(content, ensure_ascii=False, indent=2) + "\n"
-    )
-    if lang == "en":
-        (DEST / "strings.json").write_text(
-            json.dumps(content, ensure_ascii=False, indent=2) + "\n"
-        )
+    translations[lang] = content
 
 
 def field(name, selector, required=True, description=None):
@@ -106,7 +102,7 @@ actions = {
                 "Parametry dotazu",
                 obj,
                 False,
-                "Například {from: '2026-10-01', to: '2026-10-31'}. ID zadávejte bez URL kódování.",
+                "Parametry from a to zadávejte jako ISO datum. ID zadávejte bez URL kódování.",
             ),
         },
     ),
@@ -169,6 +165,150 @@ services = {
     }
     for key, (name, description, fields) in actions.items()
 }
+
+
+# Stejné klíče používají entity i obě jazykové varianty.
+entity_names = {
+    "sensor": {
+        "new_marks": ("Nové známky", "New marks"),
+        "homework_count": ("Otevřené úkoly", "Open homeworks"),
+        "homeworks_pending": (
+            "Nedokončené úkoly v období",
+            "Pending homeworks in period",
+        ),
+        "unread": ("Nepřečtené zprávy", "Unread messages"),
+        "noticeboard_unread": ("Nepřečtená nástěnka", "Unread noticeboard messages"),
+        "received": ("Přijaté zprávy", "Received messages"),
+        "noticeboard": ("Zprávy na nástěnce", "Noticeboard messages"),
+        "absence_unexcused": ("Neomluvené hodiny", "Unexcused lessons"),
+        "absence_unresolved": ("Nevyřešené absence", "Unresolved absences"),
+        "absence_excused": ("Omluvené hodiny", "Excused lessons"),
+        "substitutions": ("Změny rozvrhu", "Timetable changes"),
+        "subjects": ("Předměty", "Subjects"),
+        "final_marks": ("Vysvědčení", "Certificates"),
+        "measures": ("Výchovná opatření", "Pedagogical measures"),
+        "balance": ("Zůstatek třídního fondu", "Class fund balance"),
+        "subject_average": ("{subject} – průměr", "{subject} average"),
+    },
+    "calendar": {
+        "timetable": ("Rozvrh", "Timetable"),
+        "events": ("Školní akce", "School events"),
+    },
+    "binary_sensor": {"student_present": ("Ve škole", "At school")},
+    "todo": {"homeworks": ("Domácí úkoly", "Homeworks")},
+    "button": {"refresh": ("Aktualizovat", "Refresh")},
+}
+english_actions = {
+    "refresh": ("Refresh", "Refreshes all enabled modules for the account."),
+    "query": (
+        "Query API",
+        "Returns the documented endpoint response to response_variable.",
+    ),
+    "mark_message_read": (
+        "Mark message as read",
+        "Marks a message as read on the school server.",
+    ),
+    "set_homework_done": (
+        "Set homework completion",
+        "Changes the student's Finished flag on the school server.",
+    ),
+    "confirm_marks": (
+        "Confirm marks",
+        "Confirms the selected marks on the school server.",
+    ),
+    "predict_marks": (
+        "Predict average",
+        "Returns the school's prediction using existing and hypothetical marks.",
+    ),
+    "send_message": (
+        "Send Komens message",
+        "Sends a message to the selected recipients. Query message_types for available types and recipients.",
+    ),
+    "write_classbook": (
+        "Write classbook",
+        "Writes a classbook record using teacher permissions. record.Id must match record_id.",
+    ),
+    "get_attachment": (
+        "Get attachment",
+        "Returns Base64 content and MIME type for an attachment up to 5 MiB.",
+    ),
+    "web_login": (
+        "Web login",
+        "Returns a one-time login URL. Treat this URL as an account credential.",
+    ),
+}
+english_fields = {
+    "entry_id": "Bakaláři account",
+    "endpoint": "Endpoint",
+    "id": "Identifier",
+    "parameters": "Query parameters",
+    "message_id": "Message ID",
+    "homework_id": "Homework ID",
+    "done": "Completed",
+    "mark_ids": "Mark IDs (list)",
+    "marks": "Marks (list of objects)",
+    "message_type": "Message type",
+    "title": "Title",
+    "text": "Text",
+    "recipient_type": "Recipient type",
+    "recipients": "Recipient IDs (list)",
+    "options": "Additional message fields",
+    "record_id": "Record ID",
+    "record": "Record",
+    "attachment_id": "Attachment ID",
+}
+for lang in ("cs", "en"):
+    path = DEST / "translations" / f"{lang}.json"
+    content = translations[lang]
+    content["entity"] = {
+        platform: {key: {"name": names[lang == "en"]} for key, names in entries.items()}
+        for platform, entries in entity_names.items()
+    }
+    content["exceptions"] = {
+        "read_only": {
+            "message": "Účet je v režimu pouze pro čtení. Zápisy a vytváření webového přihlášení jsou zakázané."
+            if lang == "cs"
+            else "The account is in read-only mode. Writes and creating web login URLs are disabled."
+        }
+    }
+    content["services"] = {}
+    for key, service in services.items():
+        content["services"][key] = {
+            "name": service["name"] if lang == "cs" else english_actions[key][0],
+            "description": service["description"]
+            if lang == "cs"
+            else english_actions[key][1],
+            "fields": {
+                field_key: {
+                    "name": value["name"] if lang == "cs" else english_fields[field_key]
+                }
+                for field_key, value in service["fields"].items()
+            },
+        }
+        if "parameters" in service["fields"]:
+            content["services"][key]["fields"]["parameters"]["description"] = (
+                service["fields"]["parameters"]["description"]
+                if lang == "cs"
+                else "Use ISO dates for from and to. Supply identifiers without URL encoding."
+            )
+    path.write_text(json.dumps(content, ensure_ascii=False, indent=2) + "\n")
+    if lang == "en":
+        (DEST / "strings.json").write_text(
+            json.dumps(content, ensure_ascii=False, indent=2) + "\n"
+        )
+
+# services.yaml obsahuje schéma; názvy a popisy se načítají z překladů.
+schemas = {
+    key: {
+        "fields": {
+            field_key: {
+                k: v for k, v in field.items() if k not in ("name", "description")
+            }
+            for field_key, field in value["fields"].items()
+        }
+    }
+    for key, value in services.items()
+}
 (DEST / "services.yaml").write_text(
-    yaml.safe_dump(services, allow_unicode=True, sort_keys=False)
+    yaml.safe_dump(schemas, allow_unicode=True, sort_keys=False)
 )

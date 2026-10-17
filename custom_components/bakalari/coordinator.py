@@ -56,7 +56,6 @@ class BakalariCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.entry = entry
         self.profile: dict[str, Any] = {}
         self.errors: dict[str, str] = {}
-        self.successful: set[str] = set()
         self._calendar_lock = asyncio.Lock()
         self._calendar_cache: dict[str, tuple[float, dict]] = {}
 
@@ -131,7 +130,6 @@ class BakalariCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 if isinstance(outcome, BaseException):
                     raise outcome
             self.errors = errors
-            self.successful.update(result)
             self._calendar_cache.clear()
             return result
         except AuthenticationError as err:

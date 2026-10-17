@@ -1,3 +1,4 @@
+from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 import pytest
@@ -13,8 +14,9 @@ from custom_components.bakalari.coordinator import BakalariCoordinator
 
 
 def client():
-    value = AsyncMock()
-    value.url = "https://school.example"
+    value = SimpleNamespace(
+        url="https://school.example", user=AsyncMock(), request=AsyncMock()
+    )
     value.user.return_value = {
         "UserUID": "student",
         "EnabledModules": [

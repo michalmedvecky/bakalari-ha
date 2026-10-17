@@ -4,6 +4,7 @@ from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
+from .models import school_model
 
 
 class BakalariEntity(CoordinatorEntity):
@@ -19,7 +20,7 @@ class BakalariEntity(CoordinatorEntity):
             identifiers={(DOMAIN, coordinator.entry.unique_id)},
             name=coordinator.entry.title,
             manufacturer="Bakaláři",
-            model=coordinator.profile.get("SchoolOrganizationName", "Bakaláři API v3"),
+            model=school_model(coordinator.profile.get("SchoolOrganizationName")),
             entry_type=DeviceEntryType.SERVICE,
             configuration_url=coordinator.client.url,
         )

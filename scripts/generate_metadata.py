@@ -70,9 +70,9 @@ for lang in ("cs", "en"):
                         if cs
                         else "Expose detailed entity attributes",
                     },
-                    "description": "Podrobnosti mohou obsahovat osobní údaje a ukládat se do historie. Změny se použijí po uložení."
+                    "description": "Podrobnosti zahrnují omezená metadata a mohou se ukládat do historie. Názvy, nadpisy a odesílatelé mohou obsahovat osobní údaje viditelné ostatním uživatelům HA. Těla zpráv se nezveřejňují. Změny se použijí po uložení."
                     if cs
-                    else "Details may contain personal information and be stored in history. Changes apply after saving.",
+                    else "Details include limited metadata and may be stored in history. Names, titles and senders may contain personal information visible to other HA users. Message bodies are never exposed. Changes apply after saving.",
                 }
             }
         },

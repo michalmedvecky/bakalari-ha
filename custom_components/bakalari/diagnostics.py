@@ -14,4 +14,6 @@ async def async_get_config_entry_diagnostics(hass, entry):
         "last_update_success": coordinator.last_update_success,
         "available_endpoints": sorted(coordinator.data or {}),
         "endpoint_errors": dict(coordinator.errors),
+        "skipped_modules": dict(coordinator.skipped_modules),
+        "skipped_endpoints": dict(coordinator.skipped_endpoints),
     }

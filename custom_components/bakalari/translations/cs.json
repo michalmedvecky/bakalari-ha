@@ -52,7 +52,7 @@
           "read_only": "Pouze pro čtení",
           "expose_details": "Zveřejnit podrobnosti v atributech entit"
         },
-        "description": "Podrobnosti mohou obsahovat osobní údaje a ukládat se do historie. Změny se použijí po uložení."
+        "description": "Podrobnosti zahrnují omezená metadata a mohou se ukládat do historie. Názvy, nadpisy a odesílatelé mohou obsahovat osobní údaje viditelné ostatním uživatelům HA. Těla zpráv se nezveřejňují. Změny se použijí po uložení."
       }
     }
   },

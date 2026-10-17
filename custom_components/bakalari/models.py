@@ -134,3 +134,42 @@ def in_range(events, start, end):
         e["uid"]: e for e in events if event_start(e) < end and event_end(e) > start
     }
     return sorted(unique.values(), key=event_start)
+
+
+def numeric_average(value):
+    """Převede pouze jednoznačné desetinné číslo, případně s jednotkou %."""
+    import math
+
+    text = str(value).strip() if value is not None else ""
+    unit = "%" if text.endswith("%") else None
+    number = text[:-1].strip() if unit else text
+    if not re.fullmatch(r"[+-]?\d+(?:[.,]\d+)?", number):
+        return None, None
+    parsed = float(number.replace(",", "."))
+    return (parsed, unit) if math.isfinite(parsed) else (None, None)
+
+
+def school_model(value):
+    """Název školy použije jen tehdy, nejde-li o prázdnou šablonu serveru."""
+    import unicodedata
+
+    name = str(value or "").strip()
+    normalized = "".join(
+        c
+        for c in unicodedata.normalize("NFKD", name.casefold())
+        if not unicodedata.combining(c)
+    )
+    placeholder = normalized.strip("<>[]{} ")
+    if placeholder in (
+        "",
+        "nazev skoly",
+        "nazevskoly",
+        "school name",
+        "schoolname",
+        "none",
+        "null",
+        "n/a",
+        "-",
+    ):
+        return "Bakaláři API v3"
+    return name

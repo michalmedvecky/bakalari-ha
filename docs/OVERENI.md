@@ -22,4 +22,12 @@ Syntaxe výjimek nově používá závorky. Minimum `2026.3` zůstává platné:
 
 Testovací matice na GitHubu zahrnuje **HA 2026.3.4 a 2026.10.1 s Pythonem 3.14**. Používá skutečné třídy HA a místní HTTP server se smyšlenými daty. Kontroluje také načtení českých a anglických překladů pomocí loaderu HA, trvalou dostupnost akcí při odpojení účtu, blokaci zápisů a soulad verze vydání.
 
-Výsledky konkrétních běhů jsou dostupné v [GitHub Actions](https://github.com/michalmedvecky/bakalari-ha/actions/workflows/test.yml). Testy nekomunikují se skutečnou školou. Funkční ověření přihlášeného školního účtu a jeho konkrétních oprávnění nadále chybí.
+Výsledky konkrétních běhů jsou dostupné v [GitHub Actions](https://github.com/michalmedvecky/bakalari-ha/actions/workflows/test.yml). Testy nekomunikují se skutečnou školou. Rozsah uživatelského ověření přihlášeného účtu popisuje následující doplnění; úplné ověření všech modulů a zápisových akcí k dispozici není.
+
+## Doplnění z reálného účtu — 17. října 2026
+
+Uživatel následně přidal skutečný účet a ohlásil zobrazení známek, zpráv Komens a rozvrhu. Report identifikoval chybějící výhled kalendáře na příští týden, šablonový název školy, textové průměry a nejasné vynechání modulů. Při zapnutých podrobnostech zaznamenal příliš velké atributy zpráv a citlivé přihlašovací údaje v těle jedné školní zprávy. Zároveň doložil rozdíl mezi serverovým čítačem nových známek a příznaky `IsNew`.
+
+Verze 1.0.2 proto omezuje zveřejňované atributy, vynechává těla zpráv, převádí jednoznačné průměry na číselné stavy, načítá následující týden a doplňuje diagnostiku vynechání. Regresní testy používají pouze smyšlená data včetně zástupných citlivých textů; skutečné zprávy ani přihlašovací údaje uživatelova účtu nebyly do repozitáře vloženy.
+
+Tento report potvrzuje částečný provoz přihlášené integrace na konkrétní škole. Nepotvrzuje funkčnost všech modulů, oprávnění jiných účtů ani provedení všech zápisových akcí. Opravenou verzi vůči skutečné škole ověří až následná aktualizace uživatelovy instalace.

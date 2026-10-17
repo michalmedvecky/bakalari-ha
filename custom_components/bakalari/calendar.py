@@ -31,9 +31,13 @@ class BakalariCalendar(BakalariEntity, CalendarEntity):
     @property
     def event(self):
         data = self.coordinator.data.get(self.key, {})
-        events = (
-            timetable_events(data) if self.key == "timetable" else school_events(data)
-        )
+        if self.key == "timetable":
+            events = timetable_events(data) + timetable_events(
+                self.coordinator.data.get("timetable_next", {})
+            )
+            events = list({event["uid"]: event for event in events}.values())
+        else:
+            events = school_events(data)
         upcoming = sorted(
             (e for e in events if event_end(e) > dt_util.now()),
             key=event_start,

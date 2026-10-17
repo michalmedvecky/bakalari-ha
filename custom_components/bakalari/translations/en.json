@@ -52,7 +52,7 @@
           "read_only": "Read-only mode",
           "expose_details": "Expose detailed entity attributes"
         },
-        "description": "Details may contain personal information and be stored in history. Changes apply after saving."
+        "description": "Details include limited metadata and may be stored in history. Names, titles and senders may contain personal information visible to other HA users. Message bodies are never exposed. Changes apply after saving."
       }
     }
   },

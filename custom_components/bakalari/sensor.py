@@ -1,15 +1,30 @@
 """Počítadla a průměry předmětů vrácené školním serverem."""
 
-from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.sensor import SensorEntity, SensorStateClass
 from homeassistant.core import callback
 
+from .attributes import (
+    MAX_DETAIL_ITEMS,
+    bounded_attributes,
+    mark_summary,
+    message_summary,
+)
 from .const import CONF_EXPOSE_DETAILS
 from .entity import BakalariEntity
-from .models import homework_finished
+from .models import homework_finished, numeric_average
 
 # Klíč, název, ikona a převod hodnoty; podrobné atributy jsou volitelné.
 DESCRIPTIONS = (
-    ("new_marks", "new_marks", "mdi:numeric", lambda d: d),
+    (
+        "marks",
+        "new_marks",
+        "mdi:numeric",
+        lambda d: sum(
+            mark.get("IsNew") is True
+            for subject in d.get("Subjects", [])
+            for mark in subject.get("Marks", []) or []
+        ),
+    ),
     ("homework_count", "homework_count", "mdi:clipboard-text", lambda d: d),
     (
         "homeworks",
@@ -117,6 +132,9 @@ async def async_setup_entry(hass, entry, async_add_entities):
 class BakalariSensor(BakalariEntity, SensorEntity):
     def __init__(self, coordinator, key, translation_key, icon, extract, index):
         super().__init__(coordinator, key, translation_key, icon)
+        # První senzor změnil zdroj dat, zachovává však původní identitu v registru.
+        if index == 0:
+            self._attr_unique_id = f"{coordinator.entry.unique_id}_new_marks"
         self._attr_unique_id += f"_{index}"
         self.extract = extract
 
@@ -128,20 +146,37 @@ class BakalariSensor(BakalariEntity, SensorEntity):
 
     @property
     def extra_state_attributes(self):
+        if self.translation_key == "new_marks":
+            return {
+                "source": "marks.IsNew",
+                "server_count": self.coordinator.data.get("new_marks"),
+            }
         if self.coordinator.entry.options.get(CONF_EXPOSE_DETAILS, False):
             value = self.coordinator.data.get(self.key)
             if isinstance(value, dict):
-                # Omezí velikost seznamů ukládaných do historie.
-                return {
-                    "data": {
-                        k: v[:50] if isinstance(v, list) else v
-                        for k, v in value.items()
+                if self.key in ("received", "noticeboard"):
+                    messages = value.get("Messages") or []
+                    value = {
+                        "Messages": [
+                            message_summary(item)
+                            for item in messages[:MAX_DETAIL_ITEMS]
+                        ],
+                        "message_count": len(messages),
+                        "messages_truncated": len(messages) > MAX_DETAIL_ITEMS,
                     }
-                }
+                attributes = bounded_attributes({"data": value})
+                if self.key in ("received", "noticeboard") and "data" in attributes:
+                    summary = attributes["data"]
+                    summary["messages_truncated"] = len(
+                        summary.get("Messages", [])
+                    ) < len(messages)
+                return attributes
         return None
 
 
 class SubjectSensor(BakalariEntity, SensorEntity):
+    _attr_state_class = SensorStateClass.MEASUREMENT
+
     def __init__(self, coordinator, subject_id, name):
         super().__init__(coordinator, "marks", "subject_average", "mdi:counter")
         self._attr_translation_placeholders = {"subject": name}
@@ -165,18 +200,29 @@ class SubjectSensor(BakalariEntity, SensorEntity):
 
     @property
     def native_value(self):
-        # Zachová slovní, procentuální i bodové hodnocení v původním tvaru.
-        return str((self.subject() or {}).get("AverageText", "")).strip() or None
+        return numeric_average((self.subject() or {}).get("AverageText"))[0]
+
+    @property
+    def native_unit_of_measurement(self):
+        return numeric_average((self.subject() or {}).get("AverageText"))[1]
 
     @property
     def extra_state_attributes(self):
         subject = self.subject() or {}
         attributes = {
             "subject_id": self.subject_id,
+            "average_text": subject.get("AverageText"),
             "mark_count": len(subject.get("Marks", []) or []),
             "temporary_mark": subject.get("TemporaryMark"),
             "points_only": subject.get("PointsOnly"),
         }
         if self.coordinator.entry.options.get(CONF_EXPOSE_DETAILS, False):
-            attributes["marks"] = (subject.get("Marks") or [])[-50:]
-        return attributes
+            marks = subject.get("Marks") or []
+            attributes["marks"] = [
+                mark_summary(mark) for mark in marks[-MAX_DETAIL_ITEMS:]
+            ]
+            attributes = bounded_attributes(attributes)
+            attributes["marks_truncated"] = len(attributes.get("marks", [])) < len(
+                marks
+            )
+        return bounded_attributes(attributes)

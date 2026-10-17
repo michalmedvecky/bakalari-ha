@@ -1,6 +1,8 @@
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+import pytest
+
 from custom_components.bakalari.models import (
     homework_finished,
     in_range,
@@ -108,3 +110,40 @@ def test_range_deduplicates_week_results():
 def test_student_finished_is_not_teacher_done():
     assert homework_finished({"Done": True, "Closed": True}) is False
     assert homework_finished({"Finished": True, "Done": False}) is True
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("1,47", (1.47, None)),
+        (" 2.86 ", (2.86, None)),
+        ("0,85", (0.85, None)),
+        (0, (0.0, None)),
+        ("82 %", (82.0, "%")),
+        ("NaN", (None, None)),
+        ("inf", (None, None)),
+        ("1/2", (None, None)),
+        ("prospěl", (None, None)),
+        (None, (None, None)),
+    ],
+)
+def test_numeric_average(text, expected):
+    from custom_components.bakalari.models import numeric_average
+
+    assert numeric_average(text) == expected
+
+
+@pytest.mark.parametrize(
+    "value",
+    [None, "", "název školy", "  NÁZEV ŠKOLY  ", "<nazev skoly>", "School name"],
+)
+def test_school_placeholder_model(value):
+    from custom_components.bakalari.models import school_model
+
+    assert school_model(value) == "Bakaláři API v3"
+
+
+def test_actual_school_name_is_preserved():
+    from custom_components.bakalari.models import school_model
+
+    assert school_model(" Základní škola Ukázková ") == "Základní škola Ukázková"

@@ -6,6 +6,21 @@ Verze odpovídají souboru `custom_components/bakalari/manifest.json`. Značky v
 
 Zatím bez dalších změn.
 
+## 1.0.2 — 2026-10-17
+
+Opravy podle dalšího reportu z přihlášeného školního účtu.
+
+- Těla zpráv Komens se nikdy nevkládají do atributů, ani při `expose_details`. Zůstávají pouze vybraná metadata a počet příloh.
+- Dodatečné atributy mají limit 8 KiB, texty 160 znaků a seznamy nejvýše deset položek. Známky obsahují stručný výběr polí bez popisu práce, tématu a údajů o podpisu. Příznaky zkrácení a celkové počty umožňují rozpoznat neúplný přehled.
+- Senzor Nové známky počítá `IsNew: true` z `/marks`; původní `/marks/count-new` je v atributu `server_count`. Unikátní ID senzoru zůstává zachované.
+- Průměry jsou číselné s třídou `measurement`, původní text je v `average_text`. Nejednoznačné a slovní hodnoty mají stav `unknown`; procentní jednotka se přidává jen u výslovného `%`.
+- Kalendář pravidelně načítá aktuální i příští týden, takže může o víkendu zobrazit příští hodinu v atributech. Chyba příštího týdne nevyřadí aktuální rozvrh.
+- Model zařízení nahrazuje prázdný či šablonový název školy obecným `Bakaláři API v3`.
+- Diagnostika uvádí `skipped_modules` a `skipped_endpoints` s rozlišením chybějícího modulu, práv a vypnutí uživatelem.
+- Doplněny regresní testy víkendu, soukromí, limitu atributů, číselných stavů a diagnostiky.
+
+**Dříve zveřejněné nebo uložené texty tato aktualizace neodstraní.** Pokud obsahovaly platné heslo, je vhodné ho změnit a prověřit dřívější historii, zálohy a výstupy automatizací. Úplná data jsou nadále dostupná výslovnou akcí `query`.
+
 ## 1.0.1 — 2026-10-17
 
 Opravné vydání podle instalačního a vývojářského reportu z HA Green.

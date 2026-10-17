@@ -42,7 +42,7 @@ Entity vznikají po prvním úspěšném načtení příslušného endpointu, ta
 
 | Platforma | Data |
 | --- | --- |
-| Sensor | Nové známky podle čítače serveru; průměr a počet známek pro každý předmět |
+| Sensor | Nové známky podle příznaku `IsNew`; číselný průměr a počet známek pro každý předmět |
 | Sensor | Počet otevřených úkolů serveru a nedokončených otevřených úkolů v načteném období |
 | Sensor | Počet přijatých zpráv a zpráv na nástěnce; obě počítadla nepřečtených zpráv |
 | Sensor | Součty omluvených, neomluvených a nevyřešených absencí |
@@ -52,11 +52,15 @@ Entity vznikají po prvním úspěšném načtení příslušného endpointu, ta
 | To-do | Domácí úkoly a přepínání příznaku dokončení žákem přímo v Bakalářích |
 | Button | Ruční aktualizace dat účtu |
 
-Průměry pocházejí ze školy. Integrace zachovává `AverageText` jako text včetně procentuálního/bodového hodnocení; nepočítá vlastní průměr ani ho nepřevádí na známku. Čítač nových známek může podle dokumentace vracet nulu i u nedávno přidaných známek.
+Průměry pocházejí ze školy, integrace je sama nepřepočítává. Desetinnou čárku či tečku v `AverageText` převádí na číselný stav a používá `state_class: measurement`, takže nové hodnoty lze zobrazit v grafech a dlouhodobých statistikách. Původní text je v atributu `average_text`. U výslovného znaku `%` se zachová procentuální jednotka; bodové poměry jako `0,85` se nepřepočítávají na procenta. Slovní nebo nejednoznačné hodnocení má číselný stav `unknown` a původní text zůstává v atributu. Starší textové záznamy v historii se zpětně nepřevádějí.
+
+**Nové známky** od verze 1.0.2 počítají položky s `IsNew: true` v odpovědi `/marks`. Atribut `source` uvádí `marks.IsNew`. Původní čítač `/marks/count-new` zůstává samostatně v atributu `server_count` (nebo `null`, pokud není dostupný). Tento serverový údaj může být nula i při nenulovém počtu příznaků `IsNew`; jeho význam nelze zaměňovat s počtem nepodepsaných známek. Unikátní ID senzoru zůstává zachované.
 
 Úkoly se načítají od 30 dnů zpět do 90 dnů dopředu. Toto období je výběr podle pravidel API, nikoli úplná historie všech nedokončených úkolů. Starší úkoly jsou dostupné akcí `query` s vlastními daty. Studentovo dokončení odpovídá `Finished`; `Done` a `Closed` popisují pracovní postup učitele. Starší servery bez `Finished` zobrazí úkol jako nedokončený. Změna názvu, termínu, vytváření a mazání úkolů nejsou podporované.
 
-Kalendář rozvrhu načítá týdny podle skutečně vyžádaného období (maximálně 93 dnů v jednom dotazu); výsledky krátce ukládá do paměti. Zrušené a odstraněné hodiny vynechává. Školní časy interpretuje v pásmu Europe/Prague včetně přechodů letního času. Celodenní události mají podle Home Assistantu výlučný konec. Historická data mimo školní rok mohou být omezena samotným serverem.
+Při pravidelné aktualizaci se načítá aktuální a následující týden. Atributy kalendáře tak mohou už v pátek po poslední hodině nebo o víkendu ukazovat příští pondělní hodinu. Stav `off` v době bez probíhající hodiny je správný; další hodina je uvedená v atributech. Výhled je omezený na tyto dva týdny, takže při delších prázdninách nemusí další hodinu obsahovat. Chyba následujícího týdne nevyřadí platný aktuální rozvrh a objeví se jako `timetable_next` v diagnostice.
+
+Kalendář rozvrhu pro zobrazení jiného období načítá týdny podle skutečně vyžádaného období (maximálně 93 dnů v jednom dotazu); výsledky krátce ukládá do paměti. Zrušené a odstraněné hodiny vynechává. Školní časy interpretuje v pásmu Europe/Prague včetně přechodů letního času. Celodenní události mají podle Home Assistantu výlučný konec. Historická data mimo školní rok mohou být omezena samotným serverem.
 
 ## Nastavení a přihlašovací údaje
 
@@ -66,7 +70,13 @@ Načítání respektuje `EnabledModules` i dokumentovaná oprávnění. Chybí-l
 
 Heslo je uložené ve standardním úložišti konfiguračních záznamů Home Assistantu. Tokeny zůstávají pouze v paměti. Po restartu se klient znovu přihlásí heslem. Obnova tokenů je synchronizovaná, obnovovací token se rotuje a odmítnutý token se zkusí obnovit právě jednou. Neplatné přihlašovací údaje spustí opětovné přihlášení v Home Assistantu. Pro změnu hesla lze také použít **Znovu nakonfigurovat**. Změna identity účtu nebo serveru vyžaduje novou instanci integrace.
 
-Podrobnosti zpráv a známek se standardně do atributů nevkládají. Povolíte-li je, mohou se osobní údaje ukládat do Recorderu a zobrazovat dalším uživatelům Home Assistantu. Seznamy atributů jsou omezeny na 50 položek; úplná data lze získat přes `query`. Názvy entit a zařízení identifikují školní účet i při vypnutých podrobnostech. Diagnostika obsahuje jen stav integrace a chyby endpointů, bez údajů žáků, URL, hesel a tokenů. HTTP přesměrování se automaticky nenásledují; nastavte přímo cílovou adresu školy.
+Podrobnosti zpráv a známek jsou standardně vypnuté. Po zapnutí se zveřejňují jen omezené přehledy: Komens obsahuje ID, nadpis, jméno odesílatele, datum, stav přečtení a počet příloh. **Těla zpráv (`Text`) se do atributů nevkládají ani při zapnutých podrobnostech.** Známky mají nejvýše deset stručných položek bez popisu práce, tématu a údajů o podpisu. Jednotlivé texty jsou omezené na 160 znaků a celý blok dodatečných atributů na 8 KiB; při potřebě může obsahovat méně položek. Zkrácení oznamují atributy `details_truncated`, `messages_truncated` nebo `marks_truncated`; celkové počty zůstávají samostatně uvedené.
+
+**Nadpisy, jména a další metadata mohou stále obsahovat osobní údaje viditelné ostatním uživatelům HA a ukládat se do historie.** Názvy entit a zařízení identifikují školní účet i při vypnutých podrobnostech. Úplné odpovědi včetně textů lze získat výslovnou akcí `query`; také její výsledek může obsahovat citlivé údaje a objevit se ve stopách automatizace.
+
+Diagnostika obsahuje stav integrace, chyby a důvody vynechání endpointů, bez údajů žáků, URL, hesel a tokenů. Pole `skipped_modules` uvádí nepřítomné či uživatelem vypnuté moduly, `skipped_endpoints` rozlišuje `module_not_available`, `disabled_by_options` a `missing_right`. Chyby skutečně provedených požadavků jsou odděleně v `endpoint_errors`. Například chybějící oprávnění k vysvědčení se projeví jako `final_marks: missing_right`, nikoli jako výpadek celého modulu Marks.
+
+Není-li `SchoolOrganizationName` vyplněné nebo vrací pouze šablonu typu „název školy“, použije model zařízení obecný název `Bakaláři API v3`. HTTP přesměrování se automaticky nenásledují; nastavte přímo cílovou adresu školy.
 
 ## Režim pouze pro čtení a zápisy do školy
 
@@ -128,7 +138,7 @@ Přehled všech identifikátorů dotazů a hranic pokrytí je v [docs/API_COVERA
 - **Integrace není v seznamu:** zkontrolujte cestu `/config/custom_components/bakalari/manifest.json`, verzi HA a restartujte server.
 - **Nelze se připojit:** ověřte přesnou URL, případnou podsložku, dostupnost ze serveru HA a platnost certifikátu. TLS ověřování je zapnuté. Přesměrování na jiný host nebo přihlašovací portál nemusí být použitelné jako základní URL API.
 - **Neplatné přihlášení:** ověřte údaje ve webové či mobilní aplikaci Bakalářů a dokončete opětovné přihlášení v HA.
-- **Některá entita chybí:** účet nebo škola nemusí daný modul poskytovat. Podívejte se do stažené diagnostiky na kódy endpointů (403 = zamítnutý přístup, 404 = nedostupná cesta). Modul se při příští aktualizaci zkusí znovu.
+- **Některá entita chybí:** účet nebo škola nemusí daný modul poskytovat. Podívejte se do stažené diagnostiky na `skipped_modules`, `skipped_endpoints` a kódy v `endpoint_errors` (403 = zamítnutý přístup, 404 = nedostupná cesta). Modul se při příští aktualizaci zkusí znovu.
 - **Chyba 429:** prodlužte interval načítání. Integrace neopakuje zápisy při chybách serveru.
 - **Přítomnost není okamžitá:** odpovídá poslednímu načtení přístupového systému v nastaveném intervalu.
 
@@ -145,7 +155,7 @@ python3.14 -m venv .venv
 .venv/bin/python scripts/build_release.py
 ```
 
-Testy používají skutečné třídy Home Assistantu a simulované HTTP odpovědi nebo klienty; pokrývají autentizaci, souběh, chyby, formuláře, akce, entity a převody kalendáře. Neověřují dostupnost modulů konkrétní školy ani skutečné odeslání Komens či učitelského zápisu. Bez přístupu k živému účtu nelze potvrdit end-to-end kompatibilitu konkrétní instalace školy. CI provádí stejné kontroly na Linuxu proti oběma uvedeným verzím HA. Skript sestavení vytvoří instalovatelný ZIP v `dist/` pouze ze souborů komponenty a návodu.
+Testy používají skutečné třídy Home Assistantu a simulované HTTP odpovědi nebo klienty; pokrývají autentizaci, souběh, chyby, formuláře, akce, entity a převody kalendáře. Neověřují dostupnost modulů konkrétní školy ani skutečné odeslání Komens či učitelského zápisu. Uživatelský report z přihlášeného účtu potvrzuje částečné načtení školních dat, nikoli úplné ověření všech modulů a zápisových akcí. CI provádí stejné kontroly na Linuxu proti oběma uvedeným verzím HA. Skript sestavení vytvoří instalovatelný ZIP v `dist/` pouze ze souborů komponenty a návodu.
 
 ## Spolupráce a licence
 

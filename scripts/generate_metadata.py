@@ -141,6 +141,25 @@ actions = {
             "options": field("Další pole zprávy", obj, False),
         },
     ),
+    "send_apology": (
+        "Odeslat omluvenku",
+        "Odešle omluvenku výchozímu nebo jedinému učiteli povolenému pro omluvenky daného účtu. Obě data jsou včetně celého dne v časovém pásmu HA. Vyžaduje vypnutý režim pouze pro čtení.",
+        {
+            "date_from": field(
+                "Datum od", {"date": {}}, description="První den absence (RRRR-MM-DD)."
+            ),
+            "date_to": field(
+                "Datum do",
+                {"date": {}},
+                description="Poslední den absence včetně (RRRR-MM-DD).",
+            ),
+            "reason": field(
+                "Důvod absence",
+                {"text": {"multiline": True}},
+                description="Text omluvenky odeslaný učiteli. Může se objevit ve stopách automatizace.",
+            ),
+        },
+    ),
     "write_classbook": (
         "Zapsat třídní knihu",
         "Pro učitele: zapíše záznam podle oprávnění účtu. record.Id musí odpovídat record_id.",
@@ -224,6 +243,10 @@ english_actions = {
         "Send Komens message",
         "Sends a message to the selected recipients. Query message_types for available types and recipients.",
     ),
+    "send_apology": (
+        "Send absence excuse",
+        "Sends an excuse to the default or sole teacher allowed for this account’s excuses. Both dates include the entire day in the HA time zone. Read-only mode must be disabled.",
+    ),
     "write_classbook": (
         "Write classbook",
         "Writes a classbook record using teacher permissions. record.Id must match record_id.",
@@ -238,6 +261,9 @@ english_actions = {
     ),
 }
 english_fields = {
+    "date_from": "Start date",
+    "date_to": "End date",
+    "reason": "Reason for absence",
     "entry_id": "Bakaláři account",
     "endpoint": "Endpoint",
     "id": "Identifier",
@@ -257,6 +283,45 @@ english_fields = {
     "record": "Record",
     "attachment_id": "Attachment ID",
 }
+apology_errors = {
+    "cs": {
+        "apology_dates": {"message": "Datum do nesmí předcházet datu od."},
+        "apology_response": {
+            "message": "Školní API vrátilo neplatný seznam typů omluvenek nebo příjemců. Omluvenka nebyla odeslána."
+        },
+        "apology_unavailable": {
+            "message": "Tento účet nemá dostupný typ zprávy OMLUVENKA. Ověřte oprávnění účtu ve škole."
+        },
+        "apology_recipient": {
+            "message": "Nelze jednoznačně určit třídního učitele: chybí jediný výchozí nebo jediný povolený učitel pro omluvenky. Omluvenka nebyla odeslána."
+        },
+    },
+    "en": {
+        "apology_dates": {"message": "The end date must not precede the start date."},
+        "apology_response": {
+            "message": "The school API returned invalid excuse types or recipients. No excuse was sent."
+        },
+        "apology_unavailable": {
+            "message": "The OMLUVENKA message type is unavailable for this account. Check permissions with your school."
+        },
+        "apology_recipient": {
+            "message": "Cannot identify the class teacher: there is no unique default or sole permitted teacher for excuses. No excuse was sent."
+        },
+    },
+}
+apology_field_descriptions = {
+    "cs": {
+        "date_from": "První den absence (RRRR-MM-DD).",
+        "date_to": "Poslední den absence včetně (RRRR-MM-DD).",
+        "reason": "Text omluvenky odeslaný učiteli. Může se objevit ve stopách automatizace.",
+    },
+    "en": {
+        "date_from": "First day of absence (YYYY-MM-DD).",
+        "date_to": "Last day of absence, inclusive (YYYY-MM-DD).",
+        "reason": "Excuse text sent to the teacher. May appear in automation traces.",
+    },
+}
+
 for lang in ("cs", "en"):
     path = DEST / "translations" / f"{lang}.json"
     content = translations[lang]
@@ -271,6 +336,7 @@ for lang in ("cs", "en"):
             else "The account is in read-only mode. Writes and creating web login URLs are disabled."
         }
     }
+    content["exceptions"].update(apology_errors[lang])
     content["services"] = {}
     for key, service in services.items():
         content["services"][key] = {
@@ -291,6 +357,8 @@ for lang in ("cs", "en"):
                 if lang == "cs"
                 else "Use ISO dates for from and to. Supply identifiers without URL encoding."
             )
+    for key, description in apology_field_descriptions[lang].items():
+        content["services"]["send_apology"]["fields"][key]["description"] = description
     path.write_text(json.dumps(content, ensure_ascii=False, indent=2) + "\n")
     if lang == "en":
         (DEST / "strings.json").write_text(

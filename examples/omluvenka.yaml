@@ -1,0 +1,48 @@
+# Balíček HA: uložte např. jako packages/bakalari_omluvenka.yaml.
+# V configuration.yaml zapněte načítání balíčků pod existující sekcí homeassistant:
+# homeassistant:
+#   packages: !include_dir_named packages
+# Nahraďte VASE_ENTRY_ID identifikátorem účtu z editoru akcí Bakaláři.
+# Režim Pouze pro čtení musí být vypnutý. Tlačítko odešle skutečnou omluvenku.
+# Před stisknutím nastavte obě data a důvod. Pomocníci s datem nemají časovou část.
+
+input_datetime:
+  bakalari_absence_od:
+    name: Absence od
+    has_date: true
+    has_time: false
+  bakalari_absence_do:
+    name: Absence do
+    has_date: true
+    has_time: false
+
+input_text:
+  bakalari_duvod_absence:
+    name: Důvod absence
+    max: 255
+
+input_button:
+  bakalari_odeslat_omluvenku:
+    name: Odeslat omluvenku třídnímu učiteli
+    icon: mdi:email-arrow-right
+
+automation:
+  - id: bakalari_odeslani_omluvenky
+    alias: "Bakaláři: odeslat omluvenku tlačítkem"
+    description: "Jeden stisk odešle omluvenku podle zadaných dat a důvodu."
+    mode: single
+    triggers:
+      - trigger: state
+        entity_id: input_button.bakalari_odeslat_omluvenku
+    conditions:
+      - condition: template
+        value_template: "{{ trigger.from_state is not none and trigger.to_state is not none and trigger.from_state.state not in ['unknown', 'unavailable'] and trigger.to_state.state not in ['unknown', 'unavailable'] }}"
+    actions:
+      - action: bakalari.send_apology
+        data:
+          entry_id: VASE_ENTRY_ID
+          date_from: "{{ states('input_datetime.bakalari_absence_od') }}"
+          date_to: "{{ states('input_datetime.bakalari_absence_do') }}"
+          reason: "{{ states('input_text.bakalari_duvod_absence') }}"
+# Neopakujte automaticky po chybě spojení: škola mohla zprávu už přijmout.
+# Důvod absence je uložený také v pomocníkovi a může být ve stopě automatizace.

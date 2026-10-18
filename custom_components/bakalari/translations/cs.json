@@ -134,6 +134,18 @@
   "exceptions": {
     "read_only": {
       "message": "Účet je v režimu pouze pro čtení. Zápisy a vytváření webového přihlášení jsou zakázané."
+    },
+    "apology_dates": {
+      "message": "Datum do nesmí předcházet datu od."
+    },
+    "apology_response": {
+      "message": "Školní API vrátilo neplatný seznam typů omluvenek nebo příjemců. Omluvenka nebyla odeslána."
+    },
+    "apology_unavailable": {
+      "message": "Tento účet nemá dostupný typ zprávy OMLUVENKA. Ověřte oprávnění účtu ve škole."
+    },
+    "apology_recipient": {
+      "message": "Nelze jednoznačně určit třídního učitele: chybí jediný výchozí nebo jediný povolený učitel pro omluvenky. Omluvenka nebyla odeslána."
     }
   },
   "services": {
@@ -240,6 +252,27 @@
         },
         "options": {
           "name": "Další pole zprávy"
+        }
+      }
+    },
+    "send_apology": {
+      "name": "Odeslat omluvenku",
+      "description": "Odešle omluvenku výchozímu nebo jedinému učiteli povolenému pro omluvenky daného účtu. Obě data jsou včetně celého dne v časovém pásmu HA. Vyžaduje vypnutý režim pouze pro čtení.",
+      "fields": {
+        "entry_id": {
+          "name": "Účet Bakalářů"
+        },
+        "date_from": {
+          "name": "Datum od",
+          "description": "První den absence (RRRR-MM-DD)."
+        },
+        "date_to": {
+          "name": "Datum do",
+          "description": "Poslední den absence včetně (RRRR-MM-DD)."
+        },
+        "reason": {
+          "name": "Důvod absence",
+          "description": "Text omluvenky odeslaný učiteli. Může se objevit ve stopách automatizace."
         }
       }
     },

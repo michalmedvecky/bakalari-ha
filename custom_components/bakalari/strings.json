@@ -134,6 +134,18 @@
   "exceptions": {
     "read_only": {
       "message": "The account is in read-only mode. Writes and creating web login URLs are disabled."
+    },
+    "apology_dates": {
+      "message": "The end date must not precede the start date."
+    },
+    "apology_response": {
+      "message": "The school API returned invalid excuse types or recipients. No excuse was sent."
+    },
+    "apology_unavailable": {
+      "message": "The OMLUVENKA message type is unavailable for this account. Check permissions with your school."
+    },
+    "apology_recipient": {
+      "message": "Cannot identify the class teacher: there is no unique default or sole permitted teacher for excuses. No excuse was sent."
     }
   },
   "services": {
@@ -240,6 +252,27 @@
         },
         "options": {
           "name": "Additional message fields"
+        }
+      }
+    },
+    "send_apology": {
+      "name": "Send absence excuse",
+      "description": "Sends an excuse to the default or sole teacher allowed for this account’s excuses. Both dates include the entire day in the HA time zone. Read-only mode must be disabled.",
+      "fields": {
+        "entry_id": {
+          "name": "Bakaláři account"
+        },
+        "date_from": {
+          "name": "Start date",
+          "description": "First day of absence (YYYY-MM-DD)."
+        },
+        "date_to": {
+          "name": "End date",
+          "description": "Last day of absence, inclusive (YYYY-MM-DD)."
+        },
+        "reason": {
+          "name": "Reason for absence",
+          "description": "Excuse text sent to the teacher. May appear in automation traces."
         }
       }
     },

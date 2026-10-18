@@ -8,6 +8,7 @@ from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import config_validation as cv
 
 from .api import AuthenticationError, BakalariError, path_id
+from .apologies import apology_payload
 from .const import CONF_READ_ONLY, DOMAIN
 from .endpoints import READS, validate_result
 
@@ -19,6 +20,7 @@ SERVICE_NAMES = (
     "confirm_marks",
     "predict_marks",
     "send_message",
+    "send_apology",
     "write_classbook",
     "get_attachment",
     "web_login",
@@ -30,6 +32,7 @@ WRITE_SERVICES = frozenset(
         "set_homework_done",
         "confirm_marks",
         "send_message",
+        "send_apology",
         "write_classbook",
         "web_login",
     }
@@ -102,6 +105,16 @@ def async_register_services(hass):
                 result = await client.request(
                     "POST", "/api/3/marks/what-if", json=data["marks"]
                 )
+            elif name == "send_apology":
+                if data["date_to"] < data["date_from"]:
+                    raise ServiceValidationError(
+                        translation_domain=DOMAIN, translation_key="apology_dates"
+                    )
+                types = await client.request("GET", "/api/3/komens/message-types")
+                payload = apology_payload(data, types, hass.config.time_zone)
+                result = await client.request(
+                    "POST", "/api/3/komens/message", json=payload
+                )
             elif name == "send_message":
                 payload = {
                     "MessageType": data["message_type"],
@@ -147,6 +160,7 @@ def async_register_services(hass):
                 "confirm_marks",
                 "write_classbook",
                 "send_message",
+                "send_apology",
             ):
                 await coordinator.async_request_refresh()
         except AuthenticationError as err:
@@ -196,6 +210,11 @@ def async_register_services(hass):
             vol.Required("recipients"): [cv.string],
             vol.Optional("options", default={}): options_schema,
         },
+        "send_apology": {
+            vol.Required("date_from"): cv.date,
+            vol.Required("date_to"): cv.date,
+            vol.Required("reason"): vol.All(cv.string, str.strip, vol.Length(min=1)),
+        },
         "write_classbook": {
             vol.Required("record_id"): cv.string,
             vol.Required("record"): dict,
@@ -212,6 +231,6 @@ def async_register_services(hass):
             supports_response=SupportsResponse.ONLY
             if name in ("query", "predict_marks", "get_attachment", "web_login")
             else SupportsResponse.OPTIONAL
-            if name in ("send_message", "write_classbook")
+            if name in ("send_message", "send_apology", "write_classbook")
             else SupportsResponse.NONE,
         )

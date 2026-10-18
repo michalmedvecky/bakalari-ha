@@ -98,12 +98,34 @@ Akce jsou zaregistrované po načtení integrace i v době, kdy účet není dos
 | `bakalari.set_homework_done` | Změnit dokončení úkolu: `homework_id`, `done` |
 | `bakalari.confirm_marks` | Podepsat seznam známek: `mark_ids` |
 | `bakalari.predict_marks` | Vrátit předpověď serveru pro seznam `marks` |
+| `bakalari.send_apology` | Odeslat omluvenku třídnímu učiteli: `date_from`, `date_to`, `reason` |
 | `bakalari.send_message` | Odeslat Komens: `message_type`, `title`, `text`, `recipient_type`, `recipients`, případně `options` |
 | `bakalari.write_classbook` | Učitelský zápis: `record_id`, `record`; `record.Id` musí odpovídat ID v cestě |
 | `bakalari.get_attachment` | Příloha Komens nebo úkolu: `attachment_id`; výsledek obsahuje `content_base64` a `content_type`, limit 5 MiB |
 | `bakalari.web_login` | Vrací jednorázovou přihlašovací URL do webu školy; neukládejte ji do entit ani historie |
 
 ID zadávejte v původním tvaru včetně mezer a speciálních znaků; klient je zakóduje. Typy zpráv a aktuální příjemce zjistíte dotazem `message_types`. `send_message` podporuje i omluvenky zadáním příslušného typu zprávy a polí `DateFrom`/`DateTo` v `options`. Přílohy lze předat jako již existující objekty podle API; upload nového souboru dokumentace nepopisuje. Zápisy vyžadují příslušná rodičovská nebo učitelská práva.
+
+### Odeslání omluvenky
+
+Akce `bakalari.send_apology` přijímá účet `entry_id`, první den absence `date_from`, poslední den `date_to` a neprázdný důvod `reason`. Data zadejte jako `RRRR-MM-DD`; poslední den je zahrnutý celý. Integrace použije časové pásmo nastavené v HA a zohlední změnu letního času. Datum do nesmí předcházet datu od.
+
+Při každém zavolání načte aktuální typy zpráv z API. V typu `OMLUVENKA` vybere mezi učiteli (`U`) jediného příjemce s `IsDefault: true`. Pokud žádný výchozí není, použije jediného povoleného učitele. API tím určuje adresáta omluvenky; integrace samostatně neověřuje jeho pracovní zařazení. Nevybírá z obecného seznamu všech učitelů ani podle jména. Chybí-li typ omluvenky nebo je výběr nejednoznačný, akce skončí chybou před odesláním. Konkrétního příjemce lze v takovém případě zadat ručně přes `send_message`.
+
+Vyžaduje příslušná práva účtu (obvykle rodičovského) a vypnutou volbu **Pouze pro čtení**. Odesílá zprávu Komens; následné uznání omluvené absence provádí škola. Skutečné odeslání na školním účtu zatím nebylo ověřeno. Důvod absence může být citlivý údaj a objevit se ve stopách automatizace. Akce neposkytuje ochranu před opakovaným odesláním; po nejasném výsledku spojení ověřte odeslané zprávy před dalším pokusem.
+
+```yaml
+action: bakalari.send_apology
+data:
+  entry_id: VASE_ENTRY_ID
+  date_from: "2026-10-19"
+  date_to: "2026-10-20"
+  reason: "Prosím o omluvení absence z důvodu nemoci."
+```
+
+[Kompletní příklad automatizace s pomocníky](examples/omluvenka.yaml) odešle omluvenku po stisknutí tlačítka; neodesílá ji opakovaně podle časového plánu. V editoru akcí vyberte účet a jeho `entry_id` přeneste do YAML. Akce volitelně podporuje `response_variable` a vrací odpověď API pod klíčem `result`.
+
+Podkladem jsou [typy zpráv Komens](https://github.com/bakalari-api/bakalari-api-v3/blob/master/moduly/komens_message-types.md) a [odesílání zpráv](https://github.com/bakalari-api/bakalari-api-v3/blob/master/moduly/komens_send.md).
 
 ```yaml
 # Akce ve skriptu nebo automatizaci: načtení známek

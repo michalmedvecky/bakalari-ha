@@ -57,6 +57,7 @@ Volitelný režim **Pouze pro čtení** blokuje zápisy a akci `web_login`. Čte
 | `set_homework_done` | PUT | `/api/3/homeworks/{id}/student-done/{true,false}` |
 | `confirm_marks` | POST | `/api/3/marks/SetClassificationConfirmation` |
 | `predict_marks` | POST | `/api/3/marks/what-if` |
+| `send_apology` | GET + POST | `/api/3/komens/message-types` → `/api/3/komens/message` (typ `OMLUVENKA`) |
 | `send_message` | POST | `/api/3/komens/message` |
 | `write_classbook` | POST | `/api/3/classbook/{id}` |
 | `get_attachment` | GET | `/api/3/komens/attachment/{id}` |

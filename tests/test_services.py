@@ -166,6 +166,10 @@ async def test_unknown_entry_rejected(hass, account):
             },
         ),
         ("write_classbook", {"record_id": "1", "record": {"Id": "1"}}),
+        (
+            "send_apology",
+            {"date_from": "2026-10-19", "date_to": "2026-10-19", "reason": "Nemoc"},
+        ),
         ("web_login", {}),
     ],
 )
@@ -192,3 +196,163 @@ async def test_read_only_keeps_post_queries_and_predictions(hass, account):
     await call(hass, account, "refresh")
     assert account.runtime_data.client.request.await_count == 2
     account.runtime_data.async_request_refresh.assert_awaited_once()
+
+
+def apology_types(recipients):
+    return {
+        "MessageTypes": [
+            {
+                "Abbreviation": "OBECNA",
+                "RecipientsTypes": [
+                    {"Code": "U", "Recipients": [{"Code": "OTHER", "IsDefault": True}]}
+                ],
+            },
+            {
+                "Abbreviation": "OMLUVENKA",
+                "RecipientsTypes": [{"Code": "U", "Recipients": recipients}],
+            },
+        ],
+        "Recipients": [{"Code": "OTHER", "IsDefault": True}],
+    }
+
+
+APOLOGY = {"date_from": "2026-10-24", "date_to": "2026-10-25", "reason": " Nemoc "}
+
+
+@pytest.mark.parametrize(
+    "recipients",
+    [
+        [{"Code": "T1", "IsDefault": True}, {"Code": "T2", "IsDefault": False}],
+        [{"Code": "T1", "IsDefault": False}],
+    ],
+)
+async def test_apology_selects_teacher_and_local_calendar_dates(
+    hass, account, recipients
+):
+    hass.config.time_zone = "Europe/Prague"
+    client = account.runtime_data.client
+    client.request.side_effect = [apology_types(recipients), {"Message": ""}]
+    result = await hass.services.async_call(
+        "bakalari",
+        "send_apology",
+        {"entry_id": account.entry_id, **APOLOGY},
+        blocking=True,
+        return_response=True,
+    )
+    assert result == {"result": {"Message": ""}}
+    assert client.request.await_count == 2
+    assert client.request.await_args_list[0].args == (
+        "GET",
+        "/api/3/komens/message-types",
+    )
+    client.request.assert_awaited_with(
+        "POST",
+        "/api/3/komens/message",
+        json={
+            "MessageType": "OMLUVENKA",
+            "Title": "",
+            "Text": "Nemoc",
+            "RecipientType": "U",
+            "Recipients": ["T1"],
+            "DateFrom": "2026-10-24T00:00:00+02:00",
+            "DateTo": "2026-10-25T23:59:59+01:00",
+        },
+    )
+    account.runtime_data.async_request_refresh.assert_awaited_once()
+
+
+@pytest.mark.parametrize(
+    ("response", "error_key"),
+    [
+        ({"MessageTypes": []}, "apology_unavailable"),
+        ({}, "apology_response"),
+        (None, "apology_response"),
+        ({"MessageTypes": "bad"}, "apology_response"),
+        ({"MessageTypes": [{"Abbreviation": "OMLUVENKA"}]}, "apology_response"),
+        (apology_types([{"Code": ""}]), "apology_response"),
+        (apology_types([None]), "apology_response"),
+        (apology_types([]), "apology_recipient"),
+        (apology_types([{"Code": "T1"}, {"Code": "T2"}]), "apology_recipient"),
+        (
+            apology_types(
+                [{"Code": "T1", "IsDefault": True}, {"Code": "T2", "IsDefault": True}]
+            ),
+            "apology_recipient",
+        ),
+        (
+            {
+                "MessageTypes": [
+                    {
+                        "Abbreviation": "OMLUVENKA",
+                        "RecipientsTypes": [
+                            {
+                                "Code": "UV",
+                                "Recipients": [{"Code": "ALL", "IsDefault": True}],
+                            }
+                        ],
+                    }
+                ]
+            },
+            "apology_recipient",
+        ),
+    ],
+)
+async def test_apology_does_not_send_without_unambiguous_recipient(
+    hass, account, response, error_key
+):
+    account.runtime_data.client.request.return_value = response
+    with pytest.raises(ServiceValidationError) as error:
+        await call(hass, account, "send_apology", **APOLOGY)
+    assert error.value.translation_key == error_key
+    account.runtime_data.client.request.assert_awaited_once_with(
+        "GET", "/api/3/komens/message-types"
+    )
+    account.runtime_data.async_request_refresh.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"reason": "   "},
+        {"date_from": "2026-02-30"},
+        {"date_to": "2026-10-25T12:00:00"},
+        {"recipients": ["T1"]},
+    ],
+)
+async def test_apology_rejects_invalid_fields_before_network(hass, account, overrides):
+    with pytest.raises(vol.Invalid):
+        await call(hass, account, "send_apology", **{**APOLOGY, **overrides})
+    account.runtime_data.client.request.assert_not_called()
+
+
+async def test_apology_rejects_reversed_dates_before_network(hass, account):
+    with pytest.raises(ServiceValidationError) as error:
+        await call(
+            hass, account, "send_apology", **{**APOLOGY, "date_to": "2026-10-23"}
+        )
+    assert error.value.translation_key == "apology_dates"
+    account.runtime_data.client.request.assert_not_called()
+
+
+async def test_apology_accepts_single_day_and_does_not_retry_failed_post(hass, account):
+    from custom_components.bakalari.api import BakalariError
+
+    account.runtime_data.client.request.side_effect = [
+        apology_types([{"Code": "T1", "IsDefault": True}]),
+        BakalariError("Offline"),
+    ]
+    with pytest.raises(HomeAssistantError, match="Offline"):
+        await call(
+            hass, account, "send_apology", **{**APOLOGY, "date_to": "2026-10-24"}
+        )
+    assert account.runtime_data.client.request.await_count == 2
+    account.runtime_data.async_request_refresh.assert_not_called()
+
+
+async def test_apology_auth_failure_starts_reauth_without_sending(hass, account):
+    account.runtime_data.client.request.side_effect = AuthenticationError()
+    with patch.object(type(account), "async_start_reauth") as reauth:
+        with pytest.raises(HomeAssistantError):
+            await call(hass, account, "send_apology", **APOLOGY)
+    reauth.assert_called_once_with(hass)
+    assert account.runtime_data.client.request.await_count == 1

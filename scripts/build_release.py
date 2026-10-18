@@ -18,6 +18,7 @@ with ZipFile(output, "w", ZIP_DEFLATED) as archive:
         root / "hacs.json",
         root / "LICENSE",
         *sorted((root / "docs").glob("*.md")),
+        *sorted((root / "examples").glob("*.yaml")),
     ]:
         archive.write(path, path.relative_to(root))
 print(output)

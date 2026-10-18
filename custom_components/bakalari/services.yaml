@@ -122,6 +122,24 @@ send_message:
     options:
       required: false
       selector: *id003
+send_apology:
+  fields:
+    entry_id:
+      required: true
+      selector: *id001
+    date_from:
+      required: true
+      selector:
+        date: {}
+    date_to:
+      required: true
+      selector:
+        date: {}
+    reason:
+      required: true
+      selector:
+        text:
+          multiline: true
 write_classbook:
   fields:
     entry_id:

@@ -4,7 +4,8 @@ Verze odpovídají souboru `custom_components/bakalari/manifest.json`. Značky v
 
 ## Připravuje se
 
-Zatím bez dalších změn.
+- Nová akce `bakalari.send_apology`: datum od–do včetně celých dnů, důvod absence a automatický výběr výchozího či jediného povoleného učitele pro omluvenky.
+- Validace vstupů, české formuláře a chyby, dokumentace a příklad automatizace s pomocníky.
 
 ## 1.0.2 — 2026-10-17
 

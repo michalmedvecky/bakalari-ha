@@ -4,8 +4,37 @@ Verze odpovídají souboru `custom_components/bakalari/manifest.json`. Značky v
 
 ## Připravuje se
 
-- Nová akce `bakalari.send_apology`: datum od–do včetně celých dnů, důvod absence a automatický výběr výchozího či jediného povoleného učitele pro omluvenky.
-- Validace vstupů, české formuláře a chyby, dokumentace a příklad automatizace s pomocníky.
+Zatím bez dalších změn.
+
+## 1.1.0 — 2026-10-18
+
+Samostatná akce pro odesílání omluvenek přes Komens přímo z Home Assistantu.
+
+- Nová akce `bakalari.send_apology` přijímá účet `entry_id`, datum od `date_from`, datum do `date_to` a důvod absence `reason`.
+- Obě data zahrnují celé dny v časovém pásmu Home Assistantu, včetně správného přechodu mezi letním a zimním časem.
+- Příjemce se zjišťuje při každém volání z typu `OMLUVENKA`: vybere se jediný výchozí učitel, případně jediný povolený učitel. Nejednoznačný nebo chybějící příjemce zabrání odeslání.
+- Neplatná data, obrácený rozsah nebo prázdný důvod se odmítnou před komunikací se školou. Akce respektuje režim **Pouze pro čtení**.
+- Doplněné české názvy, popisy a chyby v editoru akcí, anglické náhradní překlady a český návod v README.
+- Přiložený příklad `examples/omluvenka.yaml` obsahuje datové pomocníky, důvod absence a tlačítko pro odeslání. Příklady jsou součástí instalačního archivu.
+
+### Použití
+
+```yaml
+action: bakalari.send_apology
+data:
+  entry_id: VASE_ENTRY_ID
+  date_from: "2026-10-19"
+  date_to: "2026-10-20"
+  reason: "Prosím o omluvení absence z důvodu nemoci."
+```
+
+Zápis vyžaduje odpovídající práva účtu, obvykle rodičovského, a vypnutou volbu **Pouze pro čtení**. Akce odešle omluvenku učiteli; její následné uznání v evidenci absence provádí škola. Po nejasném výsledku spojení zkontrolujte odeslané zprávy před dalším pokusem. Důvod absence může být viditelný ve stopách automatizace.
+
+### Aktualizace a ověření
+
+V HACS aktualizujte integraci na **1.1.0** a restartujte Home Assistant. Stávající konfigurace účtů zůstává zachovaná.
+
+Ověřeno 149 testy na HA Core **2026.3.4** a **2026.10.1**, včetně volby příjemce, validace, časového pásma a blokace zápisů. Skutečné odeslání omluvenky škole zatím nebylo ověřeno.
 
 ## 1.0.2 — 2026-10-17
 

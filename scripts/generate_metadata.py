@@ -131,9 +131,11 @@ actions = {
     ),
     "send_message": (
         "Odeslat Komens",
-        "Odešle zprávu zvoleným příjemcům. Typy a příjemce zjistíte dotazem message_types.",
+        "Odešle zprávu zvoleným příjemcům. Podporuje jen OBECNA a OMLUVENKA. Příjemce zjistíte dotazem message_types.",
         {
-            "message_type": field("Typ zprávy", text),
+            "message_type": field(
+                "Typ zprávy", {"select": {"options": ["OBECNA", "OMLUVENKA"]}}
+            ),
             "title": field("Nadpis", text),
             "text": field("Text", {"text": {"multiline": True}}),
             "recipient_type": field("Typ příjemce", text),
@@ -143,8 +145,12 @@ actions = {
     ),
     "send_apology": (
         "Odeslat omluvenku",
-        "Odešle omluvenku výchozímu nebo jedinému učiteli povolenému pro omluvenky daného účtu. Obě data jsou včetně celého dne v časovém pásmu HA. Vyžaduje vypnutý režim pouze pro čtení.",
+        "Odešle omluvenku výchozímu nebo jedinému učiteli povolenému pro omluvenky daného účtu. Bez časů zahrnuje celé dny v pásmu HA. dry_run pouze vrátí náhled; odeslání vyžaduje vypnutý režim pouze pro čtení.",
         {
+            "time_from": field("Čas od", {"time": {}}, False),
+            "time_to": field("Čas do", {"time": {}}, False),
+            "title": field("Nadpis", text, False),
+            "dry_run": field("Pouze náhled", {"boolean": {}}, False),
             "date_from": field(
                 "Datum od", {"date": {}}, description="První den absence (RRRR-MM-DD)."
             ),
@@ -241,11 +247,11 @@ english_actions = {
     ),
     "send_message": (
         "Send Komens message",
-        "Sends a message to the selected recipients. Query message_types for available types and recipients.",
+        "Sends a message to the selected recipients. Only OBECNA and OMLUVENKA are allowed. Query message_types for recipients.",
     ),
     "send_apology": (
         "Send absence excuse",
-        "Sends an excuse to the default or sole teacher allowed for this account’s excuses. Both dates include the entire day in the HA time zone. Read-only mode must be disabled.",
+        "Sends an excuse to the default or sole teacher allowed for this account’s excuses. Without times, dates include entire days in the HA time zone. dry_run returns a preview; sending requires read-only mode to be disabled.",
     ),
     "write_classbook": (
         "Write classbook",
@@ -261,6 +267,9 @@ english_actions = {
     ),
 }
 english_fields = {
+    "time_from": "Start time",
+    "time_to": "End time",
+    "dry_run": "Preview only",
     "date_from": "Start date",
     "date_to": "End date",
     "reason": "Reason for absence",
@@ -321,6 +330,41 @@ apology_field_descriptions = {
         "reason": "Excuse text sent to the teacher. May appear in automation traces.",
     },
 }
+
+for lang, texts in {
+    "cs": {
+        "apology_times": "Časy od a do zadejte společně jako místní časy bez časového pásma. Neexistující nebo dvojznačný čas při změně letního času není povolen.",
+        "apology_preview_response": "Náhled dry_run vyžaduje návratovou proměnnou (response_variable).",
+    },
+    "en": {
+        "apology_times": "Supply both start and end times as local times without a time zone. Nonexistent or ambiguous times during DST changes are not allowed.",
+        "apology_preview_response": "dry_run preview requires a response variable (response_variable).",
+    },
+}.items():
+    apology_errors[lang].update(
+        {key: {"message": value} for key, value in texts.items()}
+    )
+    apology_errors[lang]["apology_dates"]["message"] = (
+        "Konec absence musí následovat po začátku."
+        if lang == "cs"
+        else "The absence end must be after its start."
+    )
+    apology_field_descriptions[lang].update(
+        {
+            "time_from": "Volitelné HH:MM:SS v pásmu HA; zadejte také čas do. Zpracování školou není ověřeno."
+            if lang == "cs"
+            else "Optional HH:MM:SS in the HA time zone; also supply end time. School handling is unverified.",
+            "time_to": "Volitelné HH:MM:SS v pásmu HA; zadejte také čas od."
+            if lang == "cs"
+            else "Optional HH:MM:SS in the HA time zone; also supply start time.",
+            "title": "Výchozí nadpis je Omluvenka DD.MM.RRRR podle prvního dne absence."
+            if lang == "cs"
+            else "Defaults to Omluvenka DD.MM.YYYY using the first absence day.",
+            "dry_run": "Bez POST a bez aktualizace koordinátoru. Vyžaduje response_variable; funguje i v režimu pouze pro čtení. Náhled obsahuje důvod absence."
+            if lang == "cs"
+            else "No POST or coordinator refresh. Requires response_variable; works in read-only mode. Preview includes the reason for absence.",
+        }
+    )
 
 for lang in ("cs", "en"):
     path = DEST / "translations" / f"{lang}.json"

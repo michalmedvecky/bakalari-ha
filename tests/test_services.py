@@ -239,7 +239,13 @@ async def test_apology_selects_teacher_and_local_calendar_dates(
         blocking=True,
         return_response=True,
     )
-    assert result == {"result": {"Message": ""}}
+    assert result == {
+        "result": {"Message": ""},
+        "dry_run": False,
+        "sent": True,
+        "recipient": {"id": "T1", "name": None},
+        "message_id": None,
+    }
     assert client.request.await_count == 2
     assert client.request.await_args_list[0].args == (
         "GET",
@@ -250,7 +256,7 @@ async def test_apology_selects_teacher_and_local_calendar_dates(
         "/api/3/komens/message",
         json={
             "MessageType": "OMLUVENKA",
-            "Title": "",
+            "Title": "Omluvenka 24.10.2026",
             "Text": "Nemoc",
             "RecipientType": "U",
             "Recipients": ["T1"],
@@ -356,3 +362,137 @@ async def test_apology_auth_failure_starts_reauth_without_sending(hass, account)
             await call(hass, account, "send_apology", **APOLOGY)
     reauth.assert_called_once_with(hass)
     assert account.runtime_data.client.request.await_count == 1
+
+
+@pytest.mark.parametrize("read_only", [False, True])
+async def test_apology_preview_only_reads_and_returns_named_recipient(
+    hass, account, read_only
+):
+    hass.config.time_zone = "Europe/Prague"
+    hass.config_entries.async_update_entry(account, options={"read_only": read_only})
+    account.runtime_data.client.request.return_value = apology_types(
+        [{"Code": "T1", "DisplayName": " Pan učitel ", "IsDefault": True}]
+    )
+    response = await hass.services.async_call(
+        "bakalari",
+        "send_apology",
+        {
+            "entry_id": account.entry_id,
+            **APOLOGY,
+            "dry_run": True,
+            "date_to": "2026-10-24",
+            "time_from": "08:00:00",
+            "time_to": "08:45:00",
+            "title": " Pozdní vlak ",
+        },
+        blocking=True,
+        return_response=True,
+    )
+    assert response["result"] is None
+    assert not response["sent"] and response["dry_run"]
+    assert response["message_id"] is None
+    assert response["recipient"] == {"id": "T1", "name": "Pan učitel"}
+    assert response["payload"]["Title"] == "Pozdní vlak"
+    assert response["payload"]["DateFrom"] == "2026-10-24T08:00:00+02:00"
+    assert response["payload"]["DateTo"] == "2026-10-24T08:45:00+02:00"
+    account.runtime_data.client.request.assert_awaited_once_with(
+        "GET", "/api/3/komens/message-types"
+    )
+    account.runtime_data.async_request_refresh.assert_not_called()
+
+
+async def test_apology_preview_requires_response_variable(hass, account):
+    with pytest.raises(ServiceValidationError) as error:
+        await call(hass, account, "send_apology", **APOLOGY, dry_run=True)
+    assert error.value.translation_key == "apology_preview_response"
+    account.runtime_data.client.request.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "fields",
+    [
+        {"time_from": "08:00:00"},
+        {"time_to": "08:45:00"},
+        {"time_from": "09:00:00", "time_to": "08:00:00"},
+        {"time_from": "08:00:00", "time_to": "08:00:00"},
+        {
+            "date_from": "2026-10-25",
+            "date_to": "2026-10-25",
+            "time_from": "02:15:00",
+            "time_to": "03:15:00",
+        },
+        {
+            "date_from": "2026-03-29",
+            "date_to": "2026-03-29",
+            "time_from": "02:15:00",
+            "time_to": "03:15:00",
+        },
+    ],
+)
+async def test_invalid_or_dst_ambiguous_times_do_not_contact_school(
+    hass, account, fields
+):
+    hass.config.time_zone = "Europe/Prague"
+    with pytest.raises(ServiceValidationError):
+        await call(
+            hass,
+            account,
+            "send_apology",
+            **{**APOLOGY, "date_to": "2026-10-24", **fields},
+        )
+    account.runtime_data.client.request.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    ("raw", "message_id"),
+    [
+        ({"Message": ""}, None),
+        ({"Id": "M1"}, "M1"),
+        ({"MessageId": "M2"}, "M2"),
+        ({"Message": {"Id": "M3"}}, "M3"),
+        ({"Message": "Some text"}, None),
+    ],
+)
+async def test_apology_sending_returns_only_explicit_id(hass, account, raw, message_id):
+    account.runtime_data.client.request.side_effect = [
+        apology_types([{"Code": "T1", "Name": "Učitel"}]),
+        raw,
+    ]
+    response = await hass.services.async_call(
+        "bakalari",
+        "send_apology",
+        {
+            "entry_id": account.entry_id,
+            **APOLOGY,
+            "date_to": "2026-10-24",
+            "time_from": "08:00:00",
+            "time_to": "08:45:00",
+        },
+        blocking=True,
+        return_response=True,
+    )
+    assert response["result"] == raw
+    assert response["message_id"] == message_id
+    assert response["recipient"] == {"id": "T1", "name": "Učitel"}
+    assert response["sent"] and not response["dry_run"]
+    assert "payload" not in response
+    assert account.runtime_data.client.request.await_count == 2
+    payload = account.runtime_data.client.request.await_args_list[1].kwargs["json"]
+    assert "T08:00:00" in payload["DateFrom"]
+    account.runtime_data.async_request_refresh.assert_awaited_once()
+
+
+@pytest.mark.parametrize("message_type", ["NASSKO", "AKTUAL", "OTHER"])
+async def test_generic_message_rejects_publication_types(hass, account, message_type):
+    with pytest.raises(vol.Invalid):
+        await call(
+            hass,
+            account,
+            "send_message",
+            message_type=message_type,
+            title="Test",
+            text="Text",
+            recipient_type="U",
+            recipients=["T1"],
+        )
+    account.runtime_data.client.request.assert_not_called()

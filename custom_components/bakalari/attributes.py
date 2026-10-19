@@ -3,7 +3,7 @@
 import json
 import math
 
-from .models import plain_text
+from .models import parse_datetime, plain_text
 
 MAX_ATTRIBUTE_BYTES = 8192
 MAX_DETAIL_ITEMS = 10
@@ -100,3 +100,13 @@ def mark_summary(mark):
         key: mark.get(key)
         for key in ("Id", "MarkText", "MarkDate", "Weight", "IsNew", "IsPoints")
     }
+
+
+def newest_messages(messages):
+    """Nejnovější nejprve bez závislosti na pořadí vráceném serverem."""
+
+    def key(message):
+        parsed = parse_datetime(message.get("SentDate"))
+        return parsed.timestamp() if parsed else float("-inf")
+
+    return sorted(messages, key=key, reverse=True)

@@ -8,7 +8,7 @@ from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import config_validation as cv
 
 from .api import AuthenticationError, BakalariError, path_id
-from .apologies import apology_payload
+from .apologies import apology_payload, apology_range, sent_message_id
 from .const import CONF_READ_ONLY, DOMAIN
 from .endpoints import READS, validate_result
 
@@ -60,11 +60,21 @@ def async_register_services(hass):
         client = coordinator.client
         data = call.data
         name = call.service
-        if name in WRITE_SERVICES and entry.options.get(CONF_READ_ONLY, False):
+        dry_run = name == "send_apology" and data.get("dry_run", False)
+        if dry_run and not call.return_response:
+            raise ServiceValidationError(
+                translation_domain=DOMAIN, translation_key="apology_preview_response"
+            )
+        if (
+            name in WRITE_SERVICES
+            and not dry_run
+            and entry.options.get(CONF_READ_ONLY, False)
+        ):
             raise ServiceValidationError(
                 translation_domain=DOMAIN, translation_key="read_only"
             )
         result = None
+        apology_response = None
         try:
             if name == "refresh":
                 await coordinator.async_request_refresh()
@@ -106,15 +116,22 @@ def async_register_services(hass):
                     "POST", "/api/3/marks/what-if", json=data["marks"]
                 )
             elif name == "send_apology":
-                if data["date_to"] < data["date_from"]:
-                    raise ServiceValidationError(
-                        translation_domain=DOMAIN, translation_key="apology_dates"
-                    )
+                bounds = apology_range(data, hass.config.time_zone)
                 types = await client.request("GET", "/api/3/komens/message-types")
-                payload = apology_payload(data, types, hass.config.time_zone)
-                result = await client.request(
-                    "POST", "/api/3/komens/message", json=payload
-                )
+                payload, recipient = apology_payload(data, types, bounds)
+                if not dry_run:
+                    result = await client.request(
+                        "POST", "/api/3/komens/message", json=payload
+                    )
+                apology_response = {
+                    "result": result,
+                    "dry_run": dry_run,
+                    "sent": not dry_run,
+                    "recipient": recipient,
+                    "message_id": sent_message_id(result),
+                }
+                if dry_run:
+                    apology_response["payload"] = payload
             elif name == "send_message":
                 payload = {
                     "MessageType": data["message_type"],
@@ -154,7 +171,7 @@ def async_register_services(hass):
                 }
             else:
                 raise ServiceValidationError("Neznámá akce")
-            if name in (
+            if not dry_run and name in (
                 "mark_message_read",
                 "set_homework_done",
                 "confirm_marks",
@@ -168,7 +185,11 @@ def async_register_services(hass):
             raise HomeAssistantError("Je nutné opětovné přihlášení") from err
         except (BakalariError, ValueError) as err:
             raise HomeAssistantError(str(err)) from err
-        return {"result": result} if call.return_response else None
+        if call.return_response:
+            return (
+                apology_response if apology_response is not None else {"result": result}
+            )
+        return None
 
     options_schema = vol.Schema(
         {
@@ -203,7 +224,9 @@ def async_register_services(hass):
         "confirm_marks": {vol.Required("mark_ids"): nonempty_ids},
         "predict_marks": {vol.Required("marks"): vol.All([dict], vol.Length(min=1))},
         "send_message": {
-            vol.Required("message_type", default="OBECNA"): cv.string,
+            vol.Required("message_type", default="OBECNA"): vol.In(
+                ("OBECNA", "OMLUVENKA")
+            ),
             vol.Required("title"): cv.string,
             vol.Required("text"): cv.string,
             vol.Required("recipient_type"): cv.string,
@@ -214,6 +237,10 @@ def async_register_services(hass):
             vol.Required("date_from"): cv.date,
             vol.Required("date_to"): cv.date,
             vol.Required("reason"): vol.All(cv.string, str.strip, vol.Length(min=1)),
+            vol.Optional("time_from"): cv.time,
+            vol.Optional("time_to"): cv.time,
+            vol.Optional("title"): vol.All(cv.string, str.strip, vol.Length(min=1)),
+            vol.Optional("dry_run", default=False): cv.boolean,
         },
         "write_classbook": {
             vol.Required("record_id"): cv.string,

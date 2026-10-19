@@ -104,7 +104,11 @@ send_message:
       selector: *id001
     message_type:
       required: true
-      selector: *id002
+      selector:
+        select:
+          options:
+          - OBECNA
+          - OMLUVENKA
     title:
       required: true
       selector: *id002
@@ -127,6 +131,21 @@ send_apology:
     entry_id:
       required: true
       selector: *id001
+    time_from:
+      required: false
+      selector:
+        time: {}
+    time_to:
+      required: false
+      selector:
+        time: {}
+    title:
+      required: false
+      selector: *id002
+    dry_run:
+      required: false
+      selector:
+        boolean: {}
     date_from:
       required: true
       selector:

@@ -31,3 +31,12 @@ Uživatel následně přidal skutečný účet a ohlásil zobrazení známek, zp
 Verze 1.0.2 proto omezuje zveřejňované atributy, vynechává těla zpráv, převádí jednoznačné průměry na číselné stavy, načítá následující týden a doplňuje diagnostiku vynechání. Regresní testy používají pouze smyšlená data včetně zástupných citlivých textů; skutečné zprávy ani přihlašovací údaje uživatelova účtu nebyly do repozitáře vloženy.
 
 Tento report potvrzuje částečný provoz přihlášené integrace na konkrétní škole. Nepotvrzuje funkčnost všech modulů, oprávnění jiných účtů ani provedení všech zápisových akcí. Opravenou verzi vůči skutečné škole ověří až následná aktualizace uživatelovy instalace.
+
+
+## Ověření verze 1.1.0 — 19. října 2026
+
+Uživatel nasadil verzi přes HACS na HA Core 2026.10.1 po vytvoření zálohy. Účet se načetl, diagnostika uvedla verzi 1.1.0 bez chyb endpointů a log neobsahoval záznamy integrace. Akce omluvenky byla zapojena do skriptu pro zpoždění vlaku, který z kalendáře vyhledává první hodinu dne. Příjemce byl zkontrolován pouze čtecím dotazem `message_types`; skutečná omluvenka škole odeslána nebyla.
+
+Report vedl k doplnění náhledu, volitelných časů, předmětu a údajů o příjemci v odpovědi. Také potvrdil potřebu řadit Komens před zkrácením a ořezávat mezery v zobrazovaných atributech předmětů. Nabídka publikačních typů zpráv žákovskému účtu není důkazem práva publikovat; akce `send_message` je proto omezena na `OBECNA` a `OMLUVENKA`.
+
+Zpracování časů omluvenky školou, uznání absence ani vrácení ID skutečně odeslané zprávy tento report nepotvrzuje. Dokumentace odesílání API uvádí odpověď `{"Message": ""}` bez ID; integrace v takovém případě vrací `message_id: null`.

@@ -8,6 +8,7 @@ from .attributes import (
     bounded_attributes,
     mark_summary,
     message_summary,
+    newest_messages,
 )
 from .const import CONF_EXPOSE_DETAILS
 from .entity import BakalariEntity
@@ -159,7 +160,7 @@ class BakalariSensor(BakalariEntity, SensorEntity):
                     value = {
                         "Messages": [
                             message_summary(item)
-                            for item in messages[:MAX_DETAIL_ITEMS]
+                            for item in newest_messages(messages)[:MAX_DETAIL_ITEMS]
                         ],
                         "message_count": len(messages),
                         "messages_truncated": len(messages) > MAX_DETAIL_ITEMS,
@@ -210,8 +211,10 @@ class SubjectSensor(BakalariEntity, SensorEntity):
     def extra_state_attributes(self):
         subject = self.subject() or {}
         attributes = {
-            "subject_id": self.subject_id,
-            "average_text": subject.get("AverageText"),
+            "subject_id": self.subject_id.strip(),
+            "average_text": subject.get("AverageText").strip()
+            if isinstance(subject.get("AverageText"), str)
+            else subject.get("AverageText"),
             "mark_count": len(subject.get("Marks", []) or []),
             "temporary_mark": subject.get("TemporaryMark"),
             "points_only": subject.get("PointsOnly"),

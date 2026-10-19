@@ -99,16 +99,18 @@ Akce jsou zaregistrované po načtení integrace i v době, kdy účet není dos
 | `bakalari.confirm_marks` | Podepsat seznam známek: `mark_ids` |
 | `bakalari.predict_marks` | Vrátit předpověď serveru pro seznam `marks` |
 | `bakalari.send_apology` | Odeslat omluvenku třídnímu učiteli: `date_from`, `date_to`, `reason` |
-| `bakalari.send_message` | Odeslat Komens: `message_type`, `title`, `text`, `recipient_type`, `recipients`, případně `options` |
+| `bakalari.send_message` | Odeslat Komens: `message_type` (`OBECNA` / `OMLUVENKA`), `title`, `text`, `recipient_type`, `recipients`, případně `options` |
 | `bakalari.write_classbook` | Učitelský zápis: `record_id`, `record`; `record.Id` musí odpovídat ID v cestě |
 | `bakalari.get_attachment` | Příloha Komens nebo úkolu: `attachment_id`; výsledek obsahuje `content_base64` a `content_type`, limit 5 MiB |
 | `bakalari.web_login` | Vrací jednorázovou přihlašovací URL do webu školy; neukládejte ji do entit ani historie |
 
-ID zadávejte v původním tvaru včetně mezer a speciálních znaků; klient je zakóduje. Typy zpráv a aktuální příjemce zjistíte dotazem `message_types`. `send_message` podporuje i omluvenky zadáním příslušného typu zprávy a polí `DateFrom`/`DateTo` v `options`. Přílohy lze předat jako již existující objekty podle API; upload nového souboru dokumentace nepopisuje. Zápisy vyžadují příslušná rodičovská nebo učitelská práva.
+ID zadávejte v původním tvaru včetně mezer a speciálních znaků; klient je zakóduje. Typy zpráv a aktuální příjemce zjistíte dotazem `message_types`. `send_message` podporuje i omluvenky zadáním příslušného typu zprávy a polí `DateFrom`/`DateTo` v `options`. Přílohy lze předat jako již existující objekty podle API; upload nového souboru dokumentace nepopisuje. Zápisy vyžadují příslušná rodičovská nebo učitelská práva. `send_message` dovoluje pouze typy `OBECNA` a `OMLUVENKA`; publikační typy jako `NASSKO` a `AKTUAL` odmítne před komunikací se školou, i když je školní API nabízí žákovskému účtu. Dostupnost typu v `message_types` sama o sobě nepotvrzuje oprávnění zveřejňovat. Existující automatizace používající jiné typy zpráv je nutné upravit.
 
 ### Odeslání omluvenky
 
-Akce `bakalari.send_apology` přijímá účet `entry_id`, první den absence `date_from`, poslední den `date_to` a neprázdný důvod `reason`. Data zadejte jako `RRRR-MM-DD`; poslední den je zahrnutý celý. Integrace použije časové pásmo nastavené v HA a zohlední změnu letního času. Datum do nesmí předcházet datu od.
+Akce `bakalari.send_apology` přijímá účet `entry_id`, první den absence `date_from`, poslední den `date_to` a neprázdný důvod `reason`. Data zadejte jako `RRRR-MM-DD`; poslední den je zahrnutý celý. Integrace použije časové pásmo nastavené v HA a zohlední změnu letního času. Konec absence musí následovat po začátku. Volitelná pole `time_from` a `time_to` (`HH:MM:SS`) zadávejte společně; bez nich zůstává rozsah celodenní. Časy se vztahují k příslušnému datu a časovému pásmu HA. Dvojznačné či neexistující časy při změně letního času jsou odmítnuty před komunikací se školou. API používá datumové a časové řetězce, ale respektování času při zpracování omluvenky školou není ověřeno; samotné předání časů nezaručuje omluvení jediné vyučovací hodiny.
+
+Volitelný `title` nastaví předmět; výchozí je `Omluvenka DD.MM.RRRR` podle prvního dne absence.
 
 Při každém zavolání načte aktuální typy zpráv z API. V typu `OMLUVENKA` vybere mezi učiteli (`U`) jediného příjemce s `IsDefault: true`. Pokud žádný výchozí není, použije jediného povoleného učitele. API tím určuje adresáta omluvenky; integrace samostatně neověřuje jeho pracovní zařazení. Nevybírá z obecného seznamu všech učitelů ani podle jména. Chybí-li typ omluvenky nebo je výběr nejednoznačný, akce skončí chybou před odesláním. Konkrétního příjemce lze v takovém případě zadat ručně přes `send_message`.
 
@@ -123,7 +125,25 @@ data:
   reason: "Prosím o omluvení absence z důvodu nemoci."
 ```
 
-[Kompletní příklad automatizace s pomocníky](examples/omluvenka.yaml) odešle omluvenku po stisknutí tlačítka; neodesílá ji opakovaně podle časového plánu. V editoru akcí vyberte účet a jeho `entry_id` přeneste do YAML. Akce volitelně podporuje `response_variable` a vrací odpověď API pod klíčem `result`.
+[Kompletní příklad automatizace s pomocníky](examples/omluvenka.yaml) odešle omluvenku po stisknutí tlačítka; neodesílá ji opakovaně podle časového plánu. V editoru akcí vyberte účet a jeho `entry_id` přeneste do YAML. Akce volitelně podporuje `response_variable`. Původní odpověď POST zůstává v `result`, nově vrací také `recipient.id`, `recipient.name`, `message_id`, `sent` a `dry_run`. Jméno může být `null`, pokud ho API neposkytne. `message_id` je pouze ID výslovně vrácené POSTem (`Id`, `MessageId` nebo `Message.Id`); dokumentovaná odpověď `{"Message": ""}` ID neobsahuje, takže v tomto případě zůstane `null`. Integrace ID neodhaduje z poslední odeslané zprávy. `sent: true` znamená dokončený POST bez chyby, nikoli potvrzení učitele ani změnu evidence absence.
+
+Pro ověření automatizace použijte **`dry_run: true` s `response_variable`**. Náhled načte pouze `message_types` a vrátí zvoleného příjemce a `payload`, bez odeslání zprávy a bez následné aktualizace koordinátoru. Funguje také v režimu **Pouze pro čtení**. Přihlašování a obnova tokenu mohou proběhnout jako u ostatních čtecích operací. Bez návratové proměnné náhled skončí chybou ještě před přístupem k API. Payload obsahuje důvod absence a může se objevit ve stopě skriptu.
+
+```yaml
+action: bakalari.send_apology
+data:
+  entry_id: VASE_ENTRY_ID
+  date_from: "2026-10-19"
+  date_to: "2026-10-19"
+  time_from: "08:00:00"
+  time_to: "08:45:00"
+  title: "Pozdní příjezd vlaku"
+  reason: "Prosím o omluvení pozdního příchodu kvůli zpoždění vlaku."
+  dry_run: true
+response_variable: nahled_omluvenky
+```
+
+Příjemce najdete v `nahled_omluvenky.recipient.name`, interval v `nahled_omluvenky.payload.DateFrom` a `DateTo`. Skutečné odeslání vyžaduje `dry_run: false` nebo vynechání tohoto pole; před změnou ověřte příjemce i rozsah.
 
 Podkladem jsou [typy zpráv Komens](https://github.com/bakalari-api/bakalari-api-v3/blob/master/moduly/komens_message-types.md) a [odesílání zpráv](https://github.com/bakalari-api/bakalari-api-v3/blob/master/moduly/komens_send.md).
 

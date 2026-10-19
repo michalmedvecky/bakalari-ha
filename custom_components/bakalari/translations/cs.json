@@ -136,7 +136,7 @@
       "message": "Účet je v režimu pouze pro čtení. Zápisy a vytváření webového přihlášení jsou zakázané."
     },
     "apology_dates": {
-      "message": "Datum do nesmí předcházet datu od."
+      "message": "Konec absence musí následovat po začátku."
     },
     "apology_response": {
       "message": "Školní API vrátilo neplatný seznam typů omluvenek nebo příjemců. Omluvenka nebyla odeslána."
@@ -146,6 +146,12 @@
     },
     "apology_recipient": {
       "message": "Nelze jednoznačně určit třídního učitele: chybí jediný výchozí nebo jediný povolený učitel pro omluvenky. Omluvenka nebyla odeslána."
+    },
+    "apology_times": {
+      "message": "Časy od a do zadejte společně jako místní časy bez časového pásma. Neexistující nebo dvojznačný čas při změně letního času není povolen."
+    },
+    "apology_preview_response": {
+      "message": "Náhled dry_run vyžaduje návratovou proměnnou (response_variable)."
     }
   },
   "services": {
@@ -230,7 +236,7 @@
     },
     "send_message": {
       "name": "Odeslat Komens",
-      "description": "Odešle zprávu zvoleným příjemcům. Typy a příjemce zjistíte dotazem message_types.",
+      "description": "Odešle zprávu zvoleným příjemcům. Podporuje jen OBECNA a OMLUVENKA. Příjemce zjistíte dotazem message_types.",
       "fields": {
         "entry_id": {
           "name": "Účet Bakalářů"
@@ -257,10 +263,26 @@
     },
     "send_apology": {
       "name": "Odeslat omluvenku",
-      "description": "Odešle omluvenku výchozímu nebo jedinému učiteli povolenému pro omluvenky daného účtu. Obě data jsou včetně celého dne v časovém pásmu HA. Vyžaduje vypnutý režim pouze pro čtení.",
+      "description": "Odešle omluvenku výchozímu nebo jedinému učiteli povolenému pro omluvenky daného účtu. Bez časů zahrnuje celé dny v pásmu HA. dry_run pouze vrátí náhled; odeslání vyžaduje vypnutý režim pouze pro čtení.",
       "fields": {
         "entry_id": {
           "name": "Účet Bakalářů"
+        },
+        "time_from": {
+          "name": "Čas od",
+          "description": "Volitelné HH:MM:SS v pásmu HA; zadejte také čas do. Zpracování školou není ověřeno."
+        },
+        "time_to": {
+          "name": "Čas do",
+          "description": "Volitelné HH:MM:SS v pásmu HA; zadejte také čas od."
+        },
+        "title": {
+          "name": "Nadpis",
+          "description": "Výchozí nadpis je Omluvenka DD.MM.RRRR podle prvního dne absence."
+        },
+        "dry_run": {
+          "name": "Pouze náhled",
+          "description": "Bez POST a bez aktualizace koordinátoru. Vyžaduje response_variable; funguje i v režimu pouze pro čtení. Náhled obsahuje důvod absence."
         },
         "date_from": {
           "name": "Datum od",

@@ -4,7 +4,13 @@ Verze odpovídají souboru `custom_components/bakalari/manifest.json`. Značky v
 
 ## Připravuje se
 
-Zatím bez dalších změn.
+- Omluvenky: `dry_run` vrací náhled a příjemce bez odeslání; funguje i v režimu pouze pro čtení a vyžaduje návratovou proměnnou.
+- Volitelné párové časy `time_from` / `time_to` a vlastní předmět. Výchozí předmět je `Omluvenka DD.MM.RRRR`. Přesné zpracování časů školou zatím není ověřeno.
+- Odpověď omluvenky nově obsahuje příjemce, příznaky náhledu/odeslání a ID zprávy, pokud ho POST skutečně vrátí. Původní odpověď zůstává v `result`.
+- Přehled Komens vybírá nejnovější zprávy podle `SentDate` před zkrácením, nezávisle na pořadí API.
+- Atributy `subject_id` a `average_text` odstraňují okolní mezery; unikátní ID entit zůstávají zachovaná.
+- **Změna chování:** `send_message` nově dovoluje pouze `OBECNA` a `OMLUVENKA`, aby neodesílal školní publikační typy nabídnuté žákům. Automatizace s jinými typy je nutné upravit.
+- Zaznamenáno instalační ověření verze 1.1.0 z 19. října; skutečné odesílání omluvenek zůstává neověřené.
 
 ## 1.1.0 — 2026-10-18
 

@@ -51,11 +51,11 @@ async def coordinator(hass, entry):
     del entry.runtime_data
 
 
-async def test_subject_average_preserves_server_format_and_hides_details(coordinator):
+async def test_subject_average_trims_text_and_hides_details(coordinator):
     entity = SubjectSensor(coordinator, "M", "Math")
     assert entity.available
     assert entity.native_value == 2.86
-    assert entity.extra_state_attributes["average_text"] == "2,86 "
+    assert entity.extra_state_attributes["average_text"] == "2,86"
     assert entity.state_class == "measurement"
     assert "marks" not in entity.extra_state_attributes
     assert entity.extra_state_attributes["mark_count"] == 1
@@ -298,3 +298,44 @@ async def test_device_model_falls_back_from_placeholder(coordinator):
         SubjectSensor(coordinator, "M", "Math").device_info["model"]
         == "Bakaláři API v3"
     )
+
+
+@pytest.mark.parametrize("reverse", [False, True])
+@pytest.mark.parametrize("key", ["received", "noticeboard"])
+async def test_messages_keep_newest_regardless_of_server_order(
+    hass, coordinator, reverse, key
+):
+    hass.config_entries._entries[coordinator.entry.entry_id] = coordinator.entry
+    hass.config_entries.async_update_entry(
+        coordinator.entry, options={"expose_details": True}
+    )
+    messages = [
+        {"Id": str(i), "SentDate": f"2026-10-{i:02d}T08:00:00+02:00"}
+        for i in range(1, 12)
+    ]
+    if reverse:
+        messages.reverse()
+    coordinator.data[key] = {"Messages": messages}
+    entity = BakalariSensor(
+        coordinator, key, key, "mdi:email", lambda d: len(d["Messages"]), 0
+    )
+    data = entity.extra_state_attributes["data"]
+    assert [item["Id"] for item in data["Messages"]] == [
+        str(i) for i in range(11, 1, -1)
+    ]
+    assert data["messages_truncated"]
+    assert data["message_count"] == 11
+    assert coordinator.data[key]["Messages"] == messages
+
+
+async def test_subject_metadata_strips_whitespace_without_changing_identity(
+    coordinator,
+):
+    subject = coordinator.data["marks"]["Subjects"][0]
+    subject["Subject"]["Id"] = " 2"
+    subject["AverageText"] = "1,00 "
+    entity = SubjectSensor(coordinator, " 2", "Test")
+    assert entity.extra_state_attributes["subject_id"] == "2"
+    assert entity.extra_state_attributes["average_text"] == "1,00"
+    assert entity.unique_id.endswith("_ 2")
+    assert entity.available and entity.native_value == 1.0
